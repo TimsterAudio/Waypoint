@@ -15,7 +15,6 @@ Asked for on 2026-10-23, to add once 0.1 has been tried.
 
 - **Pet care while away:** where the pets are boarded (or who's minding them), drop-off and pick-up dates and times, contact details, cost, status and notes. Covers dates like a stay does, and the Overview should flag days the trip covers with no care booked.
 - **Travel insurance:** insurer, policy number, who's covered, cover dates, the 24-hour emergency assistance number, claims contact, excess, cost and notes. Shown near the top of the phone itinerary, since it's what's needed in an emergency. The Overview should flag trip days outside the cover dates.
-
 - **Passports and visas:** for each traveller, passport number, issuing country and expiry, flagged when it expires within six months of getting home; each visa or e-travel authorisation (Australian ETA, US ESTA, UK ETA and so on) with its number, the countries it covers, valid dates, entries allowed and cost. Visas due to be applied for show on the Overview.
 
 ## To review
