@@ -34,7 +34,11 @@ From other travel apps:
 Typing less:
 
 - **Places as you type:** suggest hotels and attractions with their address while typing a name. Needs an online place search: Photon (komoot, OpenStreetMap data) allows search as you type, free and with no key; OpenStreetMap's own Nominatim forbids it; Google Places needs a billing account. Off unless switched on, like exchange rates.
-- **Airlines and airports from a list built in:** type "QF" or "Qantas", "SYD" or "Sydney" and get the name, code and city, and the airport's time zone filled in. No internet needed (OpenFlights' airline and airport lists). Looking up a flight number's times needs a paid flight-data service, so that would be a later, optional step.
+- **Time zones filled in from where you leave and arrive:** type "SYD", "LAX" or "Auckland" in From and To and the departure and arrival time zones are set (and the place names tidied), so they rarely need choosing by hand. Asked for on 2026-10-23.
+  - Airports and airlines from lists built in (OpenFlights' airport list has each airport's code, city and time zone; its airline list has codes and names). No internet needed.
+  - Railway stations, ferry ports and towns from a built-in list of cities with their zones (GeoNames' list of towns over 15,000 people, about 2 MB). Anything not found stays as typed, with the zone worked out as now.
+  - A place picked from the online place search (below) could take its zone from its map position too.
+  - A zone set by hand is never overwritten.
 - **Flight times while planning:** type a flight number and date and get its scheduled times, airports and terminal from a flight schedule service (AeroDataBox is a low-cost one; check it reaches far enough ahead). Paid, and off unless switched on.
 - **Live flight status on the day:** actual departure, delays and landing, from the Flightradar24 API (its own paid plans, separate from a Flightradar24 Silver or Gold account; covers flights in the air and already flown, not future schedules) or a similar service. Belongs with the live phone page, not the offline one. Paid, and off unless switched on.
 - **Quicker dates:** choosing a day in the calendar closes it straight away (or on a double-click) instead of needing Save, and a date can be typed ("14/5").
