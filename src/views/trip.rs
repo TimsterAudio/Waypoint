@@ -1,0 +1,150 @@
+//! The trip's own details: name, dates, currency, budget, who's going, notes.
+
+use eframe::egui::{self, Ui};
+use waypoint_core::money;
+
+use crate::app::{today, Action};
+use crate::doc::Doc;
+use crate::theme;
+use crate::ui::{self, Btn};
+
+/// A currency picker: the common ones, by code and name.
+pub fn currency_select(ui: &mut Ui, id: &str, code: &mut String, home: &str) {
+    let shown = if code.is_empty() {
+        home.to_string()
+    } else {
+        code.clone()
+    };
+    egui::ComboBox::from_id_salt(id)
+        .selected_text(egui::RichText::new(&shown).font(theme::medium(14.0)))
+        .width(110.0)
+        .height(420.0)
+        .show_ui(ui, |ui| {
+            for c in money::CURRENCIES {
+                let label = format!("{}  {}", c.code, c.name);
+                if ui
+                    .selectable_label(
+                        shown == c.code,
+                        egui::RichText::new(label).font(theme::body(14.0)),
+                    )
+                    .clicked()
+                {
+                    *code = c.code.to_string();
+                }
+            }
+        });
+}
+
+pub fn ui(ui: &mut Ui, doc: &mut Doc, actions: &mut Vec<Action>) {
+    let p = ui::pal(ui);
+    ui::h1(ui, "Trip details");
+    let trip = &mut doc.trip;
+    ui::panel(ui, |ui| {
+        ui::field(ui, "Name", None, |ui| {
+            ui::text_input(ui, &mut trip.name, "Japan 2027", 360.0)
+        });
+        ui::field(
+            ui,
+            "Dates",
+            Some("The first day and the day you get home. Nights between them with nowhere to stay are flagged on the Overview."),
+            |ui| {
+                ui.horizontal(|ui| {
+                    let mut has = trip.start.is_some() && trip.end.is_some();
+                    if ui.checkbox(&mut has, "").changed() {
+                        if has {
+                            let s = trip.start.unwrap_or_else(today);
+                            trip.start = Some(s);
+                            trip.end = Some(trip.end.unwrap_or_else(|| s.checked_add(jiff::Span::new().days(7)).unwrap_or(s)));
+                        } else {
+                            trip.start = None;
+                            trip.end = None;
+                        }
+                    }
+                    if let (Some(s), Some(e)) = (trip.start.as_mut(), trip.end.as_mut()) {
+                        ui::date_input(ui, "trip-start", s);
+                        ui::small(ui, "to", p.ink2);
+                        ui::date_input(ui, "trip-end", e);
+                        if *e < *s {
+                            *e = *s;
+                        }
+                        let n = s.until(*e).map(|x| x.get_days()).unwrap_or(0);
+                        ui::small(ui, format!("{n} night{}", if n == 1 { "" } else { "s" }), p.ink2);
+                    } else {
+                        ui::small(ui, "No dates yet", p.ink2);
+                    }
+                });
+            },
+        );
+        ui::field(
+            ui,
+            "Home currency",
+            Some("What you finally pay in. Costs in other currencies are converted to it."),
+            |ui| {
+                let mut code = trip.home_currency.clone();
+                currency_select(ui, "home-currency", &mut code, &trip.home_currency);
+                if code != trip.home_currency && !code.is_empty() {
+                    trip.home_currency = code;
+                }
+            },
+        );
+        ui::field(
+            ui,
+            "Budget",
+            Some("Optional. In the home currency."),
+            |ui| {
+                ui.horizontal(|ui| {
+                    ui::amount_input(ui, egui::Id::new("budget"), &mut trip.budget, 0, 140.0);
+                    ui::small(ui, &trip.home_currency, p.ink2);
+                });
+            },
+        );
+        ui::field(
+            ui,
+            "Who's going",
+            Some("Names, separated by commas."),
+            |ui| {
+                let mut s = trip.travellers.join(", ");
+                if ui::text_input(ui, &mut s, "Tim, Sam", 360.0).changed() {
+                    trip.travellers = s
+                        .split(',')
+                        .map(|x| x.trim().to_string())
+                        .filter(|x| !x.is_empty())
+                        .collect();
+                }
+            },
+        );
+        ui::field(ui, "Notes", Some("Passport numbers, insurance policy, anything for the whole trip. These go on the phone itinerary too."), |ui| {
+            ui.add(
+                egui::TextEdit::multiline(&mut trip.notes)
+                    .font(theme::body(15.0))
+                    .desired_width(f32::INFINITY)
+                    .desired_rows(5)
+                    .margin(egui::Margin::symmetric(10, 8)),
+            );
+        });
+    });
+
+    ui::panel(ui, |ui| {
+        ui::h2(ui, "The file");
+        match &doc.file {
+            Some(f) => {
+                ui::muted(ui, format!("Saved in {}", f.path.display()));
+                ui::muted(ui, format!("Phone itinerary: {}", f.html_path().display()));
+                ui.horizontal(|ui| {
+                    if ui::button(ui, "Open the phone itinerary", Btn::Secondary).clicked() {
+                        actions.push(Action::ShowPhonePage);
+                    }
+                    if ui::button(ui, "Save a copy as…", Btn::Secondary).clicked() {
+                        actions.push(Action::SaveCopy);
+                    }
+                });
+            }
+            None => {
+                ui::muted(ui, "The sample trip isn't saved anywhere. Save a copy to keep it, change it and get its phone itinerary.");
+                if ui::button(ui, "Save a copy as…", Btn::Primary).clicked() {
+                    actions.push(Action::SaveCopy);
+                }
+            }
+        }
+    });
+}

@@ -1,0 +1,28 @@
+[workspace]
+members = ["crates/waypoint-core"]
+
+[package]
+name = "waypoint"
+version = "0.1.0"
+description = "A holiday planner: day-by-day itinerary, bookings and costs"
+edition = "2021"
+default-run = "waypoint"
+
+[dependencies]
+waypoint-core = { path = "crates/waypoint-core" }
+eframe = { version = "0.36", default-features = false, features = ["glow", "default_fonts", "wayland", "x11"] }
+egui_extras = { version = "0.36", default-features = false, features = ["datepicker"] }
+jiff = "0.2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+dirs = "6"
+rfd = "0.15"
+
+[build-dependencies]
+winresource = "0.1"
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = 3
+strip = true
