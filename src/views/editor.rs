@@ -5,6 +5,8 @@ use eframe::egui::{self, Ui};
 use jiff::civil::Date;
 use waypoint_core::{money, Kind, Mode, Status, Travel, When};
 
+use waypoint_core::zones::{How, Placed};
+
 use crate::app::today;
 use crate::doc::Doc;
 use crate::theme;
@@ -24,54 +26,6 @@ pub enum Outcome {
     Duplicated(String),
 }
 
-/// Common time zones, for the zone menu. Any IANA name can be typed.
-const ZONES: &[&str] = &[
-    "Australia/Sydney",
-    "Australia/Melbourne",
-    "Australia/Brisbane",
-    "Australia/Adelaide",
-    "Australia/Perth",
-    "Australia/Hobart",
-    "Australia/Darwin",
-    "Pacific/Auckland",
-    "Pacific/Fiji",
-    "Asia/Tokyo",
-    "Asia/Seoul",
-    "Asia/Shanghai",
-    "Asia/Hong_Kong",
-    "Asia/Taipei",
-    "Asia/Singapore",
-    "Asia/Kuala_Lumpur",
-    "Asia/Bangkok",
-    "Asia/Ho_Chi_Minh",
-    "Asia/Jakarta",
-    "Asia/Makassar",
-    "Asia/Manila",
-    "Asia/Kolkata",
-    "Asia/Dubai",
-    "Europe/London",
-    "Europe/Dublin",
-    "Europe/Paris",
-    "Europe/Berlin",
-    "Europe/Rome",
-    "Europe/Madrid",
-    "Europe/Amsterdam",
-    "Europe/Zurich",
-    "Europe/Vienna",
-    "Europe/Prague",
-    "Europe/Athens",
-    "Europe/Istanbul",
-    "Atlantic/Reykjavik",
-    "America/New_York",
-    "America/Chicago",
-    "America/Denver",
-    "America/Los_Angeles",
-    "America/Vancouver",
-    "America/Toronto",
-    "Pacific/Honolulu",
-    "UTC",
-];
-
 fn label_pair(kind: Kind) -> (&'static str, &'static str) {
     match kind {
         Kind::Stay => ("Check in", "Check out"),
@@ -81,7 +35,14 @@ fn label_pair(kind: Kind) -> (&'static str, &'static str) {
 }
 
 /// A day, time and zone that may not be set yet.
-fn when_input(ui: &mut Ui, id: &str, label: &str, when: &mut Option<When>, default: Date) {
+fn when_input(
+    ui: &mut Ui,
+    id: &str,
+    label: &str,
+    when: &mut Option<When>,
+    default: Date,
+    worked_out: Option<Placed>,
+) {
     let p = ui::pal(ui);
     ui.label(
         egui::RichText::new(label)
@@ -108,27 +69,50 @@ fn when_input(ui: &mut Ui, id: &str, label: &str, when: &mut Option<When>, defau
         }
     });
     if let Some(w) = when {
+        let placed = worked_out.filter(|_| w.tz.trim().is_empty());
         ui.horizontal(|ui| {
             ui.add_space(26.0);
-            let r = ui::text_input(ui, &mut w.tz, "Time zone (optional)", 196.0);
-            r.on_hover_text("Only needed when a journey crosses time zones, so its length comes out right. For example Asia/Tokyo.");
+            let hint = match &placed {
+                Some(p) => format!("{} (worked out)", p.name),
+                None => "Time zone".into(),
+            };
+            let r = ui::text_input(ui, &mut w.tz, &hint, 196.0);
+            r.on_hover_text(
+                "Where this happens, such as Asia/Tokyo. Set it on journeys that cross time \
+                 zones; other items take theirs from the journeys around them.",
+            );
             let menu = ui::link(ui, "Choose…");
             egui::Popup::menu(&menu).show(|ui| {
-                egui::ScrollArea::vertical().max_height(320.0).show(ui, |ui| {
-                    if ui.selectable_label(w.tz.is_empty(), "None (local time)").clicked() {
-                        w.tz.clear();
-                    }
-                    for z in ZONES {
-                        if ui.selectable_label(w.tz == *z, *z).clicked() {
-                            w.tz = z.to_string();
+                egui::ScrollArea::vertical()
+                    .max_height(320.0)
+                    .show(ui, |ui| {
+                        if ui
+                            .selectable_label(w.tz.is_empty(), "Work it out")
+                            .clicked()
+                        {
+                            w.tz.clear();
                         }
-                    }
-                });
+                        for z in waypoint_core::zones::COMMON {
+                            if ui.selectable_label(w.tz == *z, *z).clicked() {
+                                w.tz = z.to_string();
+                            }
+                        }
+                    });
             });
             if !w.tz.is_empty() && w.zone().is_none() {
                 ui::small(ui, "Unknown zone", p.warn);
             }
         });
+        if placed.is_some_and(|z| z.how == How::Ambiguous) {
+            ui.horizontal(|ui| {
+                ui.add_space(26.0);
+                ui::small(
+                    ui,
+                    "This time happens twice that day, before and after crossing time zones. Choose a zone.",
+                    p.warn,
+                );
+            });
+        }
     }
     ui.add_space(4.0);
 }
@@ -194,6 +178,7 @@ impl Editor {
         let mut outcome = Outcome::None;
         let mut new_status = None;
         let default_day = item.date().or(doc.trip.start).unwrap_or_else(today);
+        let tl = doc.trip.timeline();
         ui.spacing_mut().item_spacing.y = 8.0;
 
         ui.horizontal(|ui| {
@@ -240,7 +225,15 @@ impl Editor {
 
         section(ui, "When");
         let (a, b) = label_pair(item.kind);
-        when_input(ui, &format!("{id}-start"), a, &mut item.start, default_day);
+        let start_place = tl.place_in(&item, false);
+        when_input(
+            ui,
+            &format!("{id}-start"),
+            a,
+            &mut item.start,
+            default_day,
+            start_place,
+        );
         let end_default = item
             .start
             .as_ref()
@@ -252,7 +245,15 @@ impl Editor {
                 }
             })
             .unwrap_or(default_day);
-        when_input(ui, &format!("{id}-end"), b, &mut item.end, end_default);
+        let end_place = tl.place_in(&item, true);
+        when_input(
+            ui,
+            &format!("{id}-end"),
+            b,
+            &mut item.end,
+            end_default,
+            end_place,
+        );
         if let Some(m) = item.duration_minutes() {
             if item.kind != Kind::Stay {
                 ui::small(

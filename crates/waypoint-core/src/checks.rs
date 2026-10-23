@@ -86,12 +86,7 @@ fn nights(trip: &Trip, out: &mut Vec<Warning>) {
     while d < end {
         // Overnight travel (a red-eye flight, a sleeper train) counts as a
         // bed for the night.
-        let on_the_move = trip.items.iter().any(|i| {
-            i.kind == Kind::Travel
-                && i.status != Status::Cancelled
-                && i.date() == Some(d)
-                && i.end.as_ref().is_some_and(|e| e.date > d)
-        });
+        let on_the_move = !trip.travelling_overnight(d).is_empty();
         let stays = trip.stays_for_night(d);
         let booked: Vec<&&Item> = stays.iter().filter(|s| s.status.committed()).collect();
         if stays.is_empty() && !on_the_move {
@@ -140,19 +135,21 @@ fn nights(trip: &Trip, out: &mut Vec<Warning>) {
 
 /// Timed, booked items (not stays) whose times overlap.
 fn clashes(trip: &Trip, out: &mut Vec<Warning>) {
-    // Start and end on one clock: UTC seconds when the zones are known, the
-    // local time otherwise.
+    // Start and end as moments, each in the zone it happens in.
+    let tl = trip.timeline();
     let span = |i: &Item| -> Option<(i64, i64)> {
         let s = i.start.as_ref()?;
         s.time?;
-        let start = s.instant().unwrap_or_else(|| {
-            s.civil()
-                .to_zoned(jiff::tz::TimeZone::UTC)
-                .map(|z| z.timestamp().as_second())
-                .unwrap_or(0)
-        });
-        let mins = i.duration_minutes().unwrap_or(60).max(1);
-        Some((start, start + mins * 60))
+        let start = tl.instant_in(i, false)?.as_second();
+        let end = i
+            .end
+            .as_ref()
+            .filter(|e| e.time.is_some())
+            .and_then(|_| tl.instant_in(i, true))
+            .map(|t| t.as_second())
+            .filter(|e| *e > start)
+            .unwrap_or(start + 60 * 60);
+        Some((start, end))
     };
     let timed: Vec<(&Item, (i64, i64))> = trip
         .items
@@ -242,7 +239,25 @@ fn money(trip: &Trip, today: Date, out: &mut Vec<Warning>) {
 
 /// Booked items missing what you'd need on the day.
 fn details(trip: &Trip, out: &mut Vec<Warning>) {
+    let tl = trip.timeline();
     for i in &trip.items {
+        for (w, what, is_end) in [(&i.start, "start", false), (&i.end, "end", true)] {
+            let Some(w) = w else { continue };
+            if i.status != Status::Cancelled
+                && tl.place_as(w, i.kind, is_end).how == crate::zones::How::Ambiguous
+            {
+                out.push(self::w(
+                    Severity::Check,
+                    format!(
+                        "Set a time zone for the {what} of {}: on {} that time comes both before and after crossing time zones",
+                        i.display_title(),
+                        day_label(w.date)
+                    ),
+                    Some(w.date),
+                    vec![i.id.clone()],
+                ));
+            }
+        }
         if !i.status.committed() {
             continue;
         }
@@ -332,6 +347,27 @@ mod tests {
         f.end = Some(When::at(date(2027, 5, 4), time(6, 0, 0, 0)));
         t.items.push(f);
         assert!(check(&t, date(2027, 1, 1)).is_empty());
+    }
+
+    #[test]
+    fn a_flight_over_the_date_line_covers_both_nights() {
+        let mut t = trip();
+        t.items
+            .push(stay(date(2027, 5, 1), date(2027, 5, 3), Status::Booked));
+        t.items
+            .push(stay(date(2027, 5, 5), date(2027, 5, 6), Status::Booked));
+        // Leaves the evening of the 3rd, lands the morning of the 5th.
+        let mut f = Item::new(Kind::Travel);
+        f.status = Status::Booked;
+        f.reference = "F".into();
+        f.start = Some(When::at(date(2027, 5, 3), time(22, 0, 0, 0)).in_tz("America/Los_Angeles"));
+        f.end = Some(When::at(date(2027, 5, 5), time(6, 0, 0, 0)).in_tz("Pacific/Auckland"));
+        t.items.push(f);
+        assert!(
+            check(&t, date(2027, 1, 1)).is_empty(),
+            "{:?}",
+            check(&t, date(2027, 1, 1))
+        );
     }
 
     #[test]

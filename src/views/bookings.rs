@@ -92,12 +92,7 @@ impl Bookings {
             .filter(|i| matches(i, self.search.trim()))
             .collect();
         // Dated items in order, then the undated.
-        items.sort_by_key(|i| {
-            (
-                i.start.is_none(),
-                i.start.as_ref().map(|w| (w.date, w.time)),
-            )
-        });
+        trip.timeline().sort(&mut items);
 
         let home = &trip.home_currency;
         let cols = [

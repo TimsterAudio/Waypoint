@@ -119,7 +119,13 @@ pub fn item_row(ui: &mut Ui, trip: &Trip, item: &Item, selected: bool) -> bool {
         );
     }
 
-    let detail = detail_line(item);
+    let mut detail = detail_line(item);
+    if let Some(home) = trip.timeline().home_times(item) {
+        if !detail.is_empty() {
+            detail.push_str(" · ");
+        }
+        detail.push_str(&format!("home {home}"));
+    }
     if !detail.is_empty() {
         let line = painter.with_clip_rect(Rect::from_min_max(
             pos2(title_left, rect.top()),
@@ -276,12 +282,7 @@ impl Itinerary {
                             }
                         }
                     } else if !last_day && trip.start.is_some_and(|s| *d >= s) {
-                        let on_the_move = trip.items.iter().any(|i| {
-                            i.kind == Kind::Travel
-                                && i.status != Status::Cancelled
-                                && i.date() == Some(*d)
-                                && i.end.as_ref().is_some_and(|e| e.date > *d)
-                        });
+                        let on_the_move = !trip.travelling_overnight(*d).is_empty();
                         if on_the_move {
                             ui::small(ui, "Tonight: travelling overnight", p.ink2);
                         } else {

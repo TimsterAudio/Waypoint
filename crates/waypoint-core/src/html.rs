@@ -147,7 +147,7 @@ pub fn render(trip: &Trip, now: jiff::Zoned) -> String {
     if !undated.is_empty() {
         h.push_str("<section class=\"day\" id=\"undated\"><h2>No date yet</h2>");
         for i in undated {
-            item(&mut h, trip, i);
+            item(&mut h, trip, &trip.timeline(), i);
         }
         h.push_str("</section>");
     }
@@ -175,8 +175,9 @@ fn day(h: &mut String, trip: &Trip, d: Date, today: bool) {
         esc(&d.strftime("%A %-d %B").to_string()),
         if today { " · today" } else { "" }
     ));
+    let tl = trip.timeline();
     for i in trip.items_on(d) {
-        item(h, trip, i);
+        item(h, trip, &tl, i);
     }
     // Where you sleep tonight.
     let last_night = trip.end.is_some_and(|e| d >= e);
@@ -190,13 +191,15 @@ fn day(h: &mut String, trip: &Trip, d: Date, today: bool) {
             "<p class=\"stay\">Tonight: {}</p>",
             names.join(" or ")
         ));
+    } else if !last_night && !trip.travelling_overnight(d).is_empty() {
+        h.push_str("<p class=\"stay\">Tonight: travelling overnight</p>");
     } else if !last_night && trip.start.is_some_and(|s| d >= s) {
         h.push_str("<p class=\"stay none\">Tonight: nowhere booked yet</p>");
     }
     h.push_str("</section>");
 }
 
-fn item(h: &mut String, trip: &Trip, i: &Item) {
+fn item(h: &mut String, trip: &Trip, tl: &crate::zones::Timeline, i: &Item) {
     h.push_str(&format!("<div class=\"item {}\">", status_class(i.status)));
     let time = i.start.as_ref().map(time_of).unwrap_or_default();
     h.push_str(&format!(
@@ -275,6 +278,9 @@ fn item(h: &mut String, trip: &Trip, i: &Item) {
                 }
             }
         }
+    }
+    if let Some(home) = tl.home_times(i) {
+        rows.push(("Home time", esc(&home)));
     }
     if !i.reference.is_empty() {
         rows.push((
@@ -382,6 +388,11 @@ mod tests {
         assert!(page.contains("href=\"tel:+81"));
         assert!(page.contains("maps.apple.com/?q="));
         assert!(page.contains("class=\"day today\""));
+        // The flight to Tokyo lands at 17:35 there, 18:35 in Sydney.
+        assert!(
+            page.contains("<dt>Home time</dt><dd>Sat 09:45 to Sat 18:35</dd>"),
+            "{page}"
+        );
     }
 
     #[test]

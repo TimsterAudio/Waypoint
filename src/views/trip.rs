@@ -89,6 +89,36 @@ pub fn ui(ui: &mut Ui, doc: &mut Doc, actions: &mut Vec<Action>) {
         );
         ui::field(
             ui,
+            "Home time zone",
+            Some("Where home is. Bookings in other time zones also show what time it is at home."),
+            |ui| {
+                ui.horizontal(|ui| {
+                    let system = jiff::tz::TimeZone::system()
+                        .iana_name()
+                        .unwrap_or("this computer's")
+                        .to_string();
+                    ui::text_input(ui, &mut trip.home_tz, &system, 240.0);
+                    let menu = ui::link(ui, "Choose…");
+                    egui::Popup::menu(&menu).show(|ui| {
+                        egui::ScrollArea::vertical()
+                            .max_height(320.0)
+                            .show(ui, |ui| {
+                                for z in waypoint_core::zones::COMMON {
+                                    if ui.selectable_label(trip.home_tz == *z, *z).clicked() {
+                                        trip.home_tz = z.to_string();
+                                    }
+                                }
+                            });
+                    });
+                    let tz = trip.home_tz.trim();
+                    if !tz.is_empty() && jiff::tz::TimeZone::get(tz).is_err() {
+                        ui::small(ui, "Unknown zone", p.warn);
+                    }
+                });
+            },
+        );
+        ui::field(
+            ui,
             "Budget",
             Some("Optional. In the home currency."),
             |ui| {

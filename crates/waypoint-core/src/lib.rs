@@ -8,5 +8,6 @@ pub mod model;
 pub mod money;
 pub mod rates;
 pub mod sample;
+pub mod zones;
 
 pub use model::{Cost, Item, Kind, Mode, Rate, Status, Travel, Trip, When};

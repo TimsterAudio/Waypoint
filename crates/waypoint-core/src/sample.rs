@@ -19,6 +19,7 @@ pub fn trip() -> Trip {
     const SYD: &str = "Australia/Sydney";
     const TYO: &str = "Asia/Tokyo";
     let mut t = Trip::new("Japan 2027 (sample)");
+    t.home_tz = SYD.into();
     t.start = Some(date(2027, 5, 15));
     t.end = Some(date(2027, 5, 25));
     t.budget = Some(12_000.0);

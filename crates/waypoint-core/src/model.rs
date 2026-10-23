@@ -20,6 +20,9 @@ pub struct Trip {
     pub name: String,
     /// The currency the costs are finally paid in, such as "AUD".
     pub home_currency: String,
+    /// The time zone at home, such as "Australia/Sydney", for showing what
+    /// time it is at home. Empty means this computer's zone.
+    pub home_tz: String,
     pub start: Option<Date>,
     pub end: Option<Date>,
     /// In the home currency.
@@ -39,6 +42,7 @@ impl Default for Trip {
             format: FORMAT,
             name: String::new(),
             home_currency: "AUD".into(),
+            home_tz: String::new(),
             start: None,
             end: None,
             budget: None,
@@ -421,6 +425,10 @@ impl Trip {
     pub fn new(name: &str) -> Trip {
         Trip {
             name: name.into(),
+            home_tz: TimeZone::system()
+                .iana_name()
+                .unwrap_or_default()
+                .to_string(),
             ..Default::default()
         }
     }
@@ -459,18 +467,6 @@ impl Trip {
         out
     }
 
-    /// Items starting on `day`, in time order (untimed ones first, then by
-    /// time).
-    pub fn items_on(&self, day: Date) -> Vec<&Item> {
-        let mut v: Vec<&Item> = self
-            .items
-            .iter()
-            .filter(|i| i.date() == Some(day))
-            .collect();
-        sort_by_time(&mut v);
-        v
-    }
-
     /// The stays covering the night of `day`, cancelled ones left out.
     pub fn stays_for_night(&self, day: Date) -> Vec<&Item> {
         self.items
@@ -496,15 +492,6 @@ impl Trip {
         v.dedup();
         v
     }
-}
-
-/// Sort items by start: untimed first on a day, then by time.
-pub fn sort_by_time(v: &mut [&Item]) {
-    v.sort_by(|a, b| {
-        let k = |i: &Item| i.start.as_ref().map(|w| (w.date, w.time.is_some(), w.time));
-        k(a).cmp(&k(b))
-            .then_with(|| a.display_title().cmp(&b.display_title()))
-    });
 }
 
 /// A new item id: unique enough across two people's computers.

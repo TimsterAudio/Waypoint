@@ -19,6 +19,7 @@ A holiday planner, started on 2026-10-23 to replace the owner's holiday spreadsh
 - **Autosave** 1.5 s after the last edit. Edits are found by comparing the trip before and after each frame (`Doc::edited`), which also stamps `updated` and `updatedBy` on changed items.
 - **Phone itinerary:** a self-contained HTML page (`html.rs`) with no scripts and nothing fetched, written beside the trip on every save. Taken from the Files app on iOS. A live web app that signs in to Drive is the planned next stage (see ROADMAP.md).
 - **Money:** amounts kept in the currency paid; converted with the trip's rates; **marking Paid locks the rate** on the item. Rates from Frankfurter, then ExchangeRate-API's open endpoint for the rest; only fetched when asked or when the setting is on. No network otherwise.
+- **Time zones** (`zones.rs`): an item's own zone if set; otherwise worked out from journeys with an arrival zone (home before the first, then each arrival's zone until the next departure). Items sort by the moment they happen within each local day. A time that fits two stretches (eastward over the date line) is ambiguous and asked about, except a stay's check-in (taken as after landing) and check-out (before leaving). The trip's `homeTz` (empty means the computer's) drives "home" times. Travel from day d to a later day covers every night in between.
 - **Copy style:** sentence case, plain words, specific messages. Day-first dates.
 
 ## Checks before pushing
@@ -34,4 +35,4 @@ For anything visible, `cargo build` and run `./target/debug/waypoint --sample` u
 
 ## State
 
-0.1.0 built and checked in a Linux cloud session on 2026-10-23: 27 tests pass; every screen looked at in light and dark with the sample; a real trip file opened, edited, autosaved with its phone page; a change saved on disk by "someone else" taken in; a clash stopped and resolved with a copy; the Windows `.exe` cross-compiles. Not yet tried by the owner, on Windows, with Google Drive, or on an iPhone.
+0.1.0 built and checked in a Linux cloud session on 2026-10-23; every screen looked at in light and dark with the sample; a real trip file opened, edited, autosaved with its phone page; a change saved on disk by "someone else" taken in; a clash stopped and resolved with a copy; the Windows `.exe` cross-compiles. Since then (Unreleased): time zones across the date line, from the owner's first gaps (GitHub issues 1–3), checked with an Auckland–Los Angeles round trip. The owner reports gaps as GitHub issues with the Gap form, titled "GAP: …".

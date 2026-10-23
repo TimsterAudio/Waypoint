@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- **Time zones across the date line** (issues 1–3 on GitHub).
+  - Items are put in the order they actually happen, not by their local clock: a flight leaving Auckland on Tuesday evening now comes before the Los Angeles hotel check-in that Tuesday afternoon. Items without their own time zone take it from the journeys around them (at home before the first, then wherever each one lands).
+  - A flight covering two nights (westward over the date line) marks both as "travelling overnight", in the app, the checks and the phone itinerary.
+  - Bookings in another time zone also show the time at home ("home Tue 17:00 to Wed 04:30"), in the itinerary and on the phone itinerary. The trip has a home time zone (Trip details), which new trips take from the computer.
+  - When a time without a zone happens twice on one day (eastward over the date line), Waypoint asks for a zone instead of guessing silently. A stay's check-in is taken to be where you land and its check-out where you leave, so those aren't asked about.
+  - The time zone box shows the zone it worked out.
+
 ## 0.1.0 – 2026-10-23
 
 The first version.

@@ -166,7 +166,7 @@ pub fn ui(ui: &mut Ui, trip: &Trip, actions: &mut Vec<Action>) {
                             && i.status != waypoint_core::Status::Cancelled
                     })
                     .collect();
-                waypoint_core::model::sort_by_time(&mut next);
+                trip.timeline().sort(&mut next);
                 if next.is_empty() {
                     ui::muted(ui, "Nothing dated from today on.");
                 }

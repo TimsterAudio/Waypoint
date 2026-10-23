@@ -35,6 +35,8 @@ Waypoint doesn't sign in to Google itself; it saves to a folder that Google Driv
 - **Costs**: totals, the budget, cost by kind, what's still owing and when, and the exchange rates.
 - **Trip details**: name, dates, home currency, budget, who's going, notes.
 
+**Time zones.** Set the zone on journeys that cross them (departure and arrival); everything else takes its zone from them: at home before the first journey, then wherever each one lands. Items are then shown in the order they really happen, flights over the date line that cover two nights count for both, and bookings in another zone show the time at home too. If a time without a zone could be in two places (flying east over the date line repeats part of a day), Waypoint asks you to set one.
+
 Click any item to open it on the right. Changes save by themselves a moment after you stop typing.
 
 ![Bookings](docs/bookings.png)
