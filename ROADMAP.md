@@ -35,6 +35,8 @@ Typing less:
 
 - **Places as you type:** suggest hotels and attractions with their address while typing a name. Needs an online place search: Photon (komoot, OpenStreetMap data) allows search as you type, free and with no key; OpenStreetMap's own Nominatim forbids it; Google Places needs a billing account. Off unless switched on, like exchange rates.
 - **Airlines and airports from a list built in:** type "QF" or "Qantas", "SYD" or "Sydney" and get the name, code and city, and the airport's time zone filled in. No internet needed (OpenFlights' airline and airport lists). Looking up a flight number's times needs a paid flight-data service, so that would be a later, optional step.
+- **Flight times while planning:** type a flight number and date and get its scheduled times, airports and terminal from a flight schedule service (AeroDataBox is a low-cost one; check it reaches far enough ahead). Paid, and off unless switched on.
+- **Live flight status on the day:** actual departure, delays and landing, from the Flightradar24 API (its own paid plans, separate from a Flightradar24 Silver or Gold account; covers flights in the air and already flown, not future schedules) or a similar service. Belongs with the live phone page, not the offline one. Paid, and off unless switched on.
 - **Quicker dates:** choosing a day in the calendar closes it straight away (or on a double-click) instead of needing Save, and a date can be typed ("14/5").
 
 ## Later
