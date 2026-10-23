@@ -196,6 +196,17 @@ impl TripFile {
         self.path.with_file_name(format!("{stem}.html"))
     }
 
+    /// The page to share beside the trip: "Japan 2027 (to share).html".
+    pub fn share_path(&self) -> PathBuf {
+        let html = self.html_path();
+        let stem = html
+            .file_stem()
+            .and_then(|n| n.to_str())
+            .unwrap_or("Trip")
+            .to_string();
+        html.with_file_name(format!("{stem} (to share).html"))
+    }
+
     fn lock_path(&self) -> PathBuf {
         let name = self
             .path
@@ -327,6 +338,7 @@ mod tests {
             .conflict_copy_path("tim on laptop")
             .ends_with("T (copy from tim on laptop).trip.json"));
         assert!(mine.html_path().ends_with("T.html"));
+        assert!(mine.share_path().ends_with("T (to share).html"));
         let _ = fs::remove_dir_all(d);
     }
 

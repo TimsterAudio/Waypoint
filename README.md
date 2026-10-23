@@ -57,6 +57,10 @@ One page, named after the trip, written beside the trip file each time it saves 
 
 <br clear="right">
 
+## An itinerary to share
+
+**Itinerary to share** (on the Itinerary and Trip details screens) writes `Japan 2027 (to share).html` beside the trip and opens it in your browser: every booked flight, train, stay and activity with times, addresses, phone numbers and home times, and nothing private (no costs, booking references, who it's booked with, contacts, seats, rooms, notes, ideas or cancellations). Send it as it is, or print it from the browser and choose **Save as PDF**.
+
 ## The trip file
 
 `Japan 2027.trip.json` is plain JSON, so you can read it in any text editor, and Google Drive keeps its version history. While a trip is open, `Japan 2027.trip.lock` beside it says who has it open; it's removed when Waypoint closes.

@@ -164,6 +164,9 @@ pub fn ui(ui: &mut Ui, doc: &mut Doc, actions: &mut Vec<Action>) {
                     if ui::button(ui, "Open the phone itinerary", Btn::Secondary).clicked() {
                         actions.push(Action::ShowPhonePage);
                     }
+                    if ui::button(ui, "Itinerary to share", Btn::Secondary).clicked() {
+                        actions.push(Action::ShowSharePage);
+                    }
                     if ui::button(ui, "Save a copy as…", Btn::Secondary).clicked() {
                         actions.push(Action::SaveCopy);
                     }

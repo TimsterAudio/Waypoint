@@ -305,13 +305,10 @@ impl Timeline {
     }
 
     /// What time an item happens at home, when that isn't the local time:
-    /// "Sun 08:45", or for a journey "Sat 09:45 to Sat 18:35".
+    /// "Sun 08:45", or with an end time "Sat 09:45 to Sat 18:35".
     pub fn home_times(&self, item: &Item) -> Option<String> {
         let start = item.start.as_ref().filter(|w| w.time.is_some());
-        let end = item
-            .end
-            .as_ref()
-            .filter(|w| w.time.is_some() && item.kind == Kind::Travel);
+        let end = item.end.as_ref().filter(|w| w.time.is_some());
         if start.and_then(|w| self.home_time(w)).is_none()
             && end.and_then(|w| self.home_time(w)).is_none()
         {

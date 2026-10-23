@@ -166,6 +166,23 @@ impl Doc {
         }
     }
 
+    /// Write the page to share with family and friends beside the trip (or,
+    /// for the sample, in the temporary folder). Returns where.
+    pub fn write_share_page(&mut self) -> Option<std::path::PathBuf> {
+        let path = match &self.file {
+            Some(f) => f.share_path(),
+            None => std::env::temp_dir().join("Waypoint sample (to share).html"),
+        };
+        let page = waypoint_core::html::render_shared(&self.trip, jiff::Zoned::now());
+        match file::write_atomic(&path, page.as_bytes()) {
+            Ok(()) => Some(path),
+            Err(e) => {
+                self.toast(format!("Couldn't write the itinerary to share: {e}"));
+                None
+            }
+        }
+    }
+
     /// Resolve a conflict by keeping the other person's version, with this
     /// computer's version saved beside it as a copy.
     pub fn take_theirs(&mut self) {

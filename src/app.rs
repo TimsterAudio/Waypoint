@@ -77,6 +77,8 @@ pub enum Action {
     CloseTrip,
     FetchRates,
     ShowPhonePage,
+    /// Write the itinerary to share and open it in the browser.
+    ShowSharePage,
 }
 
 pub struct WaypointApp {
@@ -321,6 +323,16 @@ impl WaypointApp {
                     }
                     None if doc.is_sample() => doc.toast("Save a copy of the sample first; the phone itinerary goes beside the trip file."),
                     None => {}
+                }
+            }
+            Action::ShowSharePage => {
+                let Some(doc) = &mut self.doc else { return };
+                if let Some(p) = doc.write_share_page() {
+                    ctx.open_url(egui::OpenUrl::new_tab(file_url(&p)));
+                    let name = p.file_name().and_then(|n| n.to_str()).unwrap_or("the page");
+                    doc.toast(format!(
+                        "Opened \"{name}\" in your browser. To make a PDF, print it and choose Save as PDF."
+                    ));
                 }
             }
         }

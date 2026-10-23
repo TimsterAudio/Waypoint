@@ -86,10 +86,59 @@ a{color:var(--trace)}
 .none{color:var(--heat)}
 .owe{color:var(--warn)}
 footer{color:var(--ink2);font-size:12px;margin-top:32px;border-top:1px solid var(--grid);padding-top:8px}
+@media print{:root{--paper:#fff;--sheet:#fff;--ink:#000;--ink2:#444;--grid:#bbb;--trace:#4a2f86}nav{display:none}section.day>h2{position:static}.item,.stay{break-inside:avoid}section.day>h2{break-after:avoid}a{color:inherit;text-decoration:none}}
 "#;
 
 /// The whole page. `now` is shown as when it was made, and marks today.
 pub fn render(trip: &Trip, now: jiff::Zoned) -> String {
+    page(trip, now, false)
+}
+
+/// A page to share with family and friends: what's booked, where and when,
+/// with how to reach each place, and nothing private: no costs, booking
+/// references, who it's booked with, contacts, seats, rooms, notes, ideas
+/// or cancellations. Prints well, for a PDF.
+pub fn render_shared(trip: &Trip, now: jiff::Zoned) -> String {
+    page(&shareable(trip), now, true)
+}
+
+/// A copy of the trip with the private details taken out, so nothing
+/// private can reach the shared page by mistake.
+fn shareable(trip: &Trip) -> Trip {
+    let mut t = Trip {
+        name: trip.name.clone(),
+        home_currency: trip.home_currency.clone(),
+        home_tz: trip.home_tz.clone(),
+        start: trip.start,
+        end: trip.end,
+        travellers: trip.travellers.clone(),
+        ..Default::default()
+    };
+    t.items = trip
+        .items
+        .iter()
+        .filter(|i| i.status.committed())
+        .map(|i| {
+            let mut i = i.clone();
+            i.cost = Default::default();
+            i.reference.clear();
+            i.provider.clear();
+            i.contact.clear();
+            i.email.clear();
+            i.room.clear();
+            i.notes.clear();
+            i.updated_by.clear();
+            i.extra.clear();
+            if let Some(tr) = &mut i.travel {
+                tr.seat.clear();
+            }
+            i
+        })
+        .collect();
+    t
+}
+
+fn page(trip: &Trip, now: jiff::Zoned, shared: bool) -> String {
     let today = now.date();
     let mut h = String::new();
     h.push_str("<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\">");
@@ -102,13 +151,73 @@ pub fn render(trip: &Trip, now: jiff::Zoned) -> String {
     if let (Some(s), Some(e)) = (trip.start, trip.end) {
         let nights = s.until(e).map(|sp| sp.get_days()).unwrap_or(0);
         h.push_str(&format!(
-            "<p class=\"sub\">{} to {} · {} nights</p>",
+            "<p class=\"sub\">{} to {} · {} nights{}</p>",
             day_label(s),
             day_label(e),
-            nights
+            nights,
+            if shared && !trip.travellers.is_empty() {
+                format!(" · {}", esc(&trip.travellers.join(", ")))
+            } else {
+                String::new()
+            }
+        ));
+    }
+    if !shared {
+        money(&mut h, trip);
+    }
+
+    let days = trip.days();
+    if days.len() > 1 {
+        h.push_str("<nav>");
+        for d in &days {
+            h.push_str(&format!("<a href=\"#d{d}\">{}</a>", d.strftime("%a %-d")));
+        }
+        if !trip.undated().is_empty() {
+            h.push_str("<a href=\"#undated\">No date</a>");
+        }
+        h.push_str("</nav>");
+    }
+
+    for d in &days {
+        day(&mut h, trip, *d, *d == today, shared);
+    }
+
+    let undated = trip.undated();
+    if !undated.is_empty() {
+        h.push_str("<section class=\"day\" id=\"undated\"><h2>No date yet</h2>");
+        for i in undated {
+            item(&mut h, trip, &trip.timeline(), i, shared);
+        }
+        h.push_str("</section>");
+    }
+
+    if !trip.notes.trim().is_empty() {
+        h.push_str(&format!(
+            "<section class=\"day\"><h2>Notes</h2><div class=\"item\"><div class=\"notes\" style=\"margin:0\">{}</div></div></section>",
+            esc(&trip.notes)
         ));
     }
 
+    let footer = if shared {
+        format!(
+            "Our plans as of {}. Times are local to each place; home times are {}.",
+            today.strftime("%-d %B %Y"),
+            trip.timeline().home_name()
+        )
+    } else {
+        format!(
+            "Made by Waypoint on {} at {}. Open Waypoint and save the trip to bring this up to date.",
+            today.strftime("%a %-d %b %Y"),
+            now.strftime("%H:%M")
+        )
+    };
+    h.push_str(&format!("<footer>{}</footer>", esc(&footer)));
+    h.push_str("</main></body></html>\n");
+    h
+}
+
+/// Booked, paid and still to pay, across the top.
+fn money(h: &mut String, trip: &Trip) {
     let t = trip.totals();
     let home = &trip.home_currency;
     h.push_str("<div class=\"money\">");
@@ -126,49 +235,9 @@ pub fn render(trip: &Trip, now: jiff::Zoned) -> String {
         crate::money::format(t.owing(), home)
     ));
     h.push_str("</div>");
-
-    let days = trip.days();
-    if days.len() > 1 {
-        h.push_str("<nav>");
-        for d in &days {
-            h.push_str(&format!("<a href=\"#d{d}\">{}</a>", d.strftime("%a %-d")));
-        }
-        if !trip.undated().is_empty() {
-            h.push_str("<a href=\"#undated\">No date</a>");
-        }
-        h.push_str("</nav>");
-    }
-
-    for d in &days {
-        day(&mut h, trip, *d, *d == today);
-    }
-
-    let undated = trip.undated();
-    if !undated.is_empty() {
-        h.push_str("<section class=\"day\" id=\"undated\"><h2>No date yet</h2>");
-        for i in undated {
-            item(&mut h, trip, &trip.timeline(), i);
-        }
-        h.push_str("</section>");
-    }
-
-    if !trip.notes.trim().is_empty() {
-        h.push_str(&format!(
-            "<section class=\"day\"><h2>Notes</h2><div class=\"item\"><div class=\"notes\" style=\"margin:0\">{}</div></div></section>",
-            esc(&trip.notes)
-        ));
-    }
-
-    h.push_str(&format!(
-        "<footer>Made by Waypoint on {} at {}. Open Waypoint and save the trip to bring this up to date.</footer>",
-        today.strftime("%a %-d %b %Y"),
-        now.strftime("%H:%M")
-    ));
-    h.push_str("</main></body></html>\n");
-    h
 }
 
-fn day(h: &mut String, trip: &Trip, d: Date, today: bool) {
+fn day(h: &mut String, trip: &Trip, d: Date, today: bool, shared: bool) {
     h.push_str(&format!(
         "<section class=\"day{}\" id=\"d{d}\"><h2>{}{}</h2>",
         if today { " today" } else { "" },
@@ -177,7 +246,7 @@ fn day(h: &mut String, trip: &Trip, d: Date, today: bool) {
     ));
     let tl = trip.timeline();
     for i in trip.items_on(d) {
-        item(h, trip, &tl, i);
+        item(h, trip, &tl, i, shared);
     }
     // Where you sleep tonight.
     let last_night = trip.end.is_some_and(|e| d >= e);
@@ -193,21 +262,28 @@ fn day(h: &mut String, trip: &Trip, d: Date, today: bool) {
         ));
     } else if !last_night && !trip.travelling_overnight(d).is_empty() {
         h.push_str("<p class=\"stay\">Tonight: travelling overnight</p>");
-    } else if !last_night && trip.start.is_some_and(|s| d >= s) {
+    } else if !shared && !last_night && trip.start.is_some_and(|s| d >= s) {
         h.push_str("<p class=\"stay none\">Tonight: nowhere booked yet</p>");
     }
     h.push_str("</section>");
 }
 
-fn item(h: &mut String, trip: &Trip, tl: &crate::zones::Timeline, i: &Item) {
+fn item(h: &mut String, trip: &Trip, tl: &crate::zones::Timeline, i: &Item, shared: bool) {
     h.push_str(&format!("<div class=\"item {}\">", status_class(i.status)));
     let time = i.start.as_ref().map(time_of).unwrap_or_default();
+    let badge = if shared {
+        String::new()
+    } else {
+        format!(
+            "<span class=\"badge {}\">{}</span>",
+            status_class(i.status),
+            i.status.label()
+        )
+    };
     h.push_str(&format!(
-        "<div class=\"row\"><span class=\"time\">{}</span><span class=\"title\">{}</span><span class=\"badge {}\">{}</span></div>",
+        "<div class=\"row\"><span class=\"time\">{}</span><span class=\"title\">{}</span>{badge}</div>",
         esc(&time),
         esc(&i.display_title()),
-        status_class(i.status),
-        i.status.label()
     ));
     let mut rows: Vec<(&str, String)> = Vec::new();
     match i.kind {
@@ -393,6 +469,43 @@ mod tests {
             page.contains("<dt>Home time</dt><dd>Sat 09:45 to Sat 18:35</dd>"),
             "{page}"
         );
+    }
+
+    #[test]
+    fn the_shared_page_leaves_out_private_details() {
+        let t = crate::sample::trip();
+        let now = jiff::civil::date(2027, 3, 1)
+            .at(9, 0, 0, 0)
+            .in_tz("Australia/Sydney")
+            .unwrap();
+        let page = render_shared(&t, now);
+        for private in [
+            "QX7K2P", // a booking reference
+            "¥",      // costs
+            "$",
+            "Day trip to Nikko", // an idea
+            "Twin, non-smoking", // the room
+            "41A",               // seats
+            "Bare feet",         // item notes
+            "Passports",         // trip notes
+            "Booking site",      // who it's booked with
+            "class=\"badge",     // statuses
+            "nowhere booked",
+        ] {
+            assert!(!page.contains(private), "{private} is on the shared page");
+        }
+        for public in [
+            "Hotel Kumo Shinjuku",
+            "1-19-1 Kabukicho",
+            "tel:+81312345678",
+            "QF 25",
+            "Home time",
+        ] {
+            assert!(
+                page.contains(public),
+                "{public} is missing from the shared page"
+            );
+        }
     }
 
     #[test]

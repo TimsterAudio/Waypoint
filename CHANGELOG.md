@@ -8,6 +8,9 @@
   - Bookings in another time zone also show the time at home ("home Tue 17:00 to Wed 04:30"), in the itinerary and on the phone itinerary. The trip has a home time zone (Trip details), which new trips take from the computer.
   - When a time without a zone happens twice on one day (eastward over the date line), Waypoint asks for a zone instead of guessing silently. A stay's check-in is taken to be where you land and its check-out where you leave, so those aren't asked about.
   - The time zone box shows the zone it worked out.
+- **Item editor:** a long message (such as the one asking for a time zone) no longer widens the panel and pushes the field names off its left edge (issue 5).
+- **Itinerary rows:** the home time has its own line and shows the end time too ("Home time: Sat 16:00 to Wed 12:00"); stays show their address and phone (issues 4 and 6).
+- **Itinerary to share** (issue 7): a page for family and friends with what's booked, where and when, how to reach each place and home times, and nothing private (no costs, booking references, who it's booked with, contacts, seats, rooms, notes, ideas or cancellations). Written beside the trip as "Name (to share).html" from the Itinerary or Trip details, and opened in the browser; print it there and choose Save as PDF for a PDF.
 
 ## 0.1.0 – 2026-10-23
 

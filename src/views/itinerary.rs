@@ -14,12 +14,30 @@ pub struct Itinerary {
     pub scroll_to: Option<Date>,
 }
 
-/// One item as a row: time, kind, title and status, with a line of detail
-/// under it. Returns true when clicked.
+/// One item as a row: time, kind, title and status, with lines of detail
+/// under it (the details, a stay's address and phone, the time at home).
+/// Returns true when clicked.
 pub fn item_row(ui: &mut Ui, trip: &Trip, item: &Item, selected: bool) -> bool {
     let p = ui::pal(ui);
     let w = ui.available_width();
-    let h = 50.0;
+    let mut lines: Vec<(String, egui::Color32)> = Vec::new();
+    let detail = detail_line(item);
+    if !detail.is_empty() {
+        lines.push((detail, p.ink2));
+    }
+    if item.kind == Kind::Stay {
+        let reach: Vec<&str> = [item.address.trim(), item.phone.trim()]
+            .into_iter()
+            .filter(|s| !s.is_empty())
+            .collect();
+        if !reach.is_empty() {
+            lines.push((reach.join(" · "), p.ink2));
+        }
+    }
+    if let Some(home) = trip.timeline().home_times(item) {
+        lines.push((format!("Home time: {home}"), p.trace));
+    }
+    let h = 30.0 + 20.0 * lines.len().max(1) as f32;
     let (rect, resp) = ui.allocate_exact_size(vec2(w, h), Sense::click());
     let painter = ui.painter_at(rect);
     if selected {
@@ -119,24 +137,17 @@ pub fn item_row(ui: &mut Ui, trip: &Trip, item: &Item, selected: bool) -> bool {
         );
     }
 
-    let mut detail = detail_line(item);
-    if let Some(home) = trip.timeline().home_times(item) {
-        if !detail.is_empty() {
-            detail.push_str(" · ");
-        }
-        detail.push_str(&format!("home {home}"));
-    }
-    if !detail.is_empty() {
-        let line = painter.with_clip_rect(Rect::from_min_max(
-            pos2(title_left, rect.top()),
-            pos2(rect.right() - 10.0, rect.bottom()),
-        ));
-        line.text(
-            pos2(title_left, bottom),
+    let clip = painter.with_clip_rect(Rect::from_min_max(
+        pos2(title_left, rect.top()),
+        pos2(rect.right() - 10.0, rect.bottom()),
+    ));
+    for (n, (text, color)) in lines.into_iter().enumerate() {
+        clip.text(
+            pos2(title_left, bottom + 20.0 * n as f32),
             Align2::LEFT_CENTER,
-            detail,
+            text,
             theme::body(13.0),
-            p.ink2,
+            color,
         );
     }
     resp.on_hover_cursor(CursorIcon::PointingHand).clicked()
@@ -223,6 +234,15 @@ impl Itinerary {
                     .clicked()
                 {
                     actions.push(Action::ShowPhonePage);
+                }
+                if ui::button(ui, "Itinerary to share", ui::Btn::Secondary)
+                    .on_hover_text(
+                        "A page for family and friends: where you'll be and when, with no costs, \
+                         booking references or notes. Print it from the browser to make a PDF.",
+                    )
+                    .clicked()
+                {
+                    actions.push(Action::ShowSharePage);
                 }
             });
         });

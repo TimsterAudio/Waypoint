@@ -76,7 +76,7 @@ fn when_input(
                 Some(p) => format!("{} (worked out)", p.name),
                 None => "Time zone".into(),
             };
-            let r = ui::text_input(ui, &mut w.tz, &hint, 196.0);
+            let r = ui::text_input(ui, &mut w.tz, &hint, 236.0);
             r.on_hover_text(
                 "Where this happens, such as Asia/Tokyo. Set it on journeys that cross time \
                  zones; other items take theirs from the journeys around them.",
@@ -104,12 +104,14 @@ fn when_input(
             }
         });
         if placed.is_some_and(|z| z.how == How::Ambiguous) {
-            ui.horizontal(|ui| {
+            ui.horizontal_top(|ui| {
                 ui.add_space(26.0);
-                ui::small(
+                ui::para(
                     ui,
                     "This time happens twice that day, before and after crossing time zones. Choose a zone.",
+                    theme::body(13.0),
                     p.warn,
+                    f32::INFINITY,
                 );
             });
         }
@@ -170,6 +172,9 @@ fn section(ui: &mut Ui, title: &str) {
 
 impl Editor {
     pub fn ui(&mut self, ui: &mut Ui, doc: &mut Doc, id: &str) -> Outcome {
+        // Nothing here may be wider than the panel: a long line would push
+        // the labels off its left edge.
+        ui.set_max_width(ui.available_width());
         let p = ui::pal(ui);
         let Some(original) = doc.trip.item(id).cloned() else {
             return Outcome::Close;
@@ -391,19 +396,19 @@ impl Editor {
             let trip = &doc.trip;
             match trip.rate_for(&item) {
                 money::RateUsed::Locked(r) => {
-                    ui.horizontal(|ui| {
-                        ui::small(
-                            ui,
-                            format!(
-                                "{} at the rate when paid (1 {code} = {r:.6} {home})",
-                                money::format(item.cost.amount * r, &home)
-                            ),
-                            p.ink2,
-                        );
-                        if ui::link(ui, "Use today's rate").clicked() {
-                            item.cost.locked_rate = None;
-                        }
-                    });
+                    ui::para(
+                        ui,
+                        format!(
+                            "{} at the rate when paid (1 {code} = {r:.6} {home})",
+                            money::format(item.cost.amount * r, &home)
+                        ),
+                        theme::body(13.0),
+                        p.ink2,
+                        f32::INFINITY,
+                    );
+                    if ui::link(ui, "Use today's rate").clicked() {
+                        item.cost.locked_rate = None;
+                    }
                 }
                 money::RateUsed::Current(r) => {
                     ui::small(
