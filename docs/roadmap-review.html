@@ -232,7 +232,7 @@ textarea#own-notes:focus { outline: none; }
 <script>
 // [id, title, detail, tag, asked]
 const GROUPS = [
-  { code: "A", title: "Asked for after the first runs", blurb: "Already a yes; to build once the first trip has been tried.", items: [
+  { code: "A", title: "Asked for after the first runs", blurb: "A yes; to build once the first trip has been tried.", items: [
     ["A1", "Pet care while away", "Where the pets are boarded or who's minding them, drop-off and pick-up, contact, cost and status. The Overview flags trip days with no care booked.", "offline", true],
     ["A2", "Travel insurance", "Insurer, policy number, who's covered, cover dates, the 24-hour emergency number, claims contact and excess. Near the top of the phone itinerary; the Overview flags days outside the cover.", "offline", true],
     ["A3", "Passports and visas", "Each traveller's passport and expiry (flagged within six months of getting home), and each visa or ETA/ESTA with its number, countries and dates.", "offline", true],
@@ -283,7 +283,7 @@ const GROUPS = [
 // Built and in the Latest build.
 const DONE = new Set(["Z1", "Z2", "Z3", "Z4"]);
 // Decided already (ROADMAP.md); shown ticked until changed here.
-const DECIDED = { A1: "yes", A2: "yes", A3: "yes" };
+const DECIDED = { A1: "yes", A2: "yes", A3: "yes", B1: "yes", B2: "yes", B3: "yes", B4: "yes", E3: "yes" };
 const TAG = { offline: "Offline", online: "Online", paid: "Paid" };
 const KEY = "waypoint-roadmap-v1";
 
