@@ -65,6 +65,10 @@ pub fn ui(ui: &mut Ui, s: &mut Settings) -> bool {
     ui::panel(ui, |ui| {
         ui::h2(ui, "About");
         ui::muted(ui, format!("Waypoint {}", env!("CARGO_PKG_VERSION")));
+        ui::muted(
+            ui,
+            "Airport and airline lists from OpenFlights (Open Database License); towns and their time zones from Natural Earth.",
+        );
         if let Some(path) = Settings::path() {
             ui::muted(ui, format!("Settings are kept in {}", path.display()));
         }

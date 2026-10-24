@@ -401,24 +401,6 @@ impl Item {
         }
         out
     }
-
-    /// How long it lasts, in minutes, when both ends have a time and the
-    /// zones (if any) are known. Crossing zones is allowed for: a flight
-    /// leaving Sydney at 10:00 and landing in Tokyo at 18:30 is 9½ hours.
-    pub fn duration_minutes(&self) -> Option<i64> {
-        let (s, e) = (self.start.as_ref()?, self.end.as_ref()?);
-        s.time?;
-        e.time?;
-        let secs = match (s.instant(), e.instant()) {
-            (Some(a), Some(b)) => b - a,
-            _ => {
-                let a = s.civil();
-                let b = e.civil();
-                a.until(b).ok()?.total(jiff::Unit::Second).ok()? as i64
-            }
-        };
-        Some(secs / 60)
-    }
 }
 
 impl Trip {
@@ -511,7 +493,7 @@ pub fn new_id() -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use jiff::civil::{date, time};
+    use jiff::civil::date;
 
     #[test]
     fn stay_nights_stop_before_check_out() {
@@ -524,15 +506,6 @@ mod tests {
         );
         s.end = None;
         assert_eq!(s.nights(), vec![date(2027, 5, 14)]);
-    }
-
-    #[test]
-    fn flight_duration_crosses_zones() {
-        let mut f = Item::new(Kind::Travel);
-        f.start = Some(When::at(date(2027, 5, 14), time(10, 0, 0, 0)).in_tz("Australia/Sydney"));
-        f.end = Some(When::at(date(2027, 5, 14), time(18, 30, 0, 0)).in_tz("Asia/Tokyo"));
-        // Sydney is UTC+10 in May, Tokyo UTC+9.
-        assert_eq!(f.duration_minutes(), Some(9 * 60 + 30));
     }
 
     #[test]

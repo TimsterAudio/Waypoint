@@ -340,7 +340,7 @@ fn item(h: &mut String, trip: &Trip, tl: &crate::zones::Timeline, i: &Item, shar
                     (false, false) => format!("{t}, {}", day_label(e.date)),
                 };
                 let mut at = at;
-                if let Some(m) = i.duration_minutes() {
+                if let Some(m) = tl.duration_minutes(i) {
                     at.push_str(&format!(" ({}h {:02}m)", m / 60, m % 60));
                 }
                 rows.push(("Arrives", esc(&at)));

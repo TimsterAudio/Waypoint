@@ -6,6 +6,7 @@ pub mod file;
 pub mod html;
 pub mod model;
 pub mod money;
+pub mod places;
 pub mod rates;
 pub mod sample;
 pub mod zones;

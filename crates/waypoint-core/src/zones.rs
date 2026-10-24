@@ -11,7 +11,7 @@
 //! Los Angeles). An item like that without its own zone is ambiguous, and
 //! the person is asked to set one.
 
-use jiff::civil::{Date, DateTime};
+use jiff::civil::Date;
 use jiff::tz::TimeZone;
 use jiff::Timestamp;
 
@@ -74,6 +74,9 @@ pub enum How {
     Set,
     /// Worked out from the journeys around it.
     WorkedOut,
+    /// A journey's end with no zone set, taken from where it leaves from or
+    /// arrives at ("Melbourne", "AKL").
+    FromPlace,
     /// The time happens in more than one place on that day; this is a guess.
     Ambiguous,
 }
@@ -114,6 +117,14 @@ fn name_of(z: &TimeZone, fallback: &str) -> String {
     z.iana_name().unwrap_or(fallback).to_string()
 }
 
+/// The zone of a journey's start (or end) from its From (or To), when the
+/// time itself has none.
+fn journey_zone(item: &Item, end: bool) -> Option<(TimeZone, String)> {
+    let t = item.travel.as_ref().filter(|_| item.kind == Kind::Travel)?;
+    let name = crate::places::zone_for(if end { &t.to } else { &t.from })?;
+    Some((TimeZone::get(name).ok()?, name.to_string()))
+}
+
 fn at(w: &When, z: &TimeZone) -> Option<Timestamp> {
     w.civil().to_zoned(z.clone()).ok().map(|z| z.timestamp())
 }
@@ -139,7 +150,7 @@ impl Trip {
             .filter(|i| i.kind == Kind::Travel && i.status != Status::Cancelled)
             .filter_map(|i| {
                 let e = i.end.as_ref()?;
-                let z = e.zone()?;
+                let z = e.zone().or_else(|| journey_zone(i, true).map(|j| j.0))?;
                 let t = at(e, &z)?;
                 Some((i, z, t))
             })
@@ -158,7 +169,13 @@ impl Trip {
             let leave = item
                 .start
                 .as_ref()
-                .and_then(|s| at(s, &s.zone().unwrap_or(here)))
+                .and_then(|s| {
+                    let z = s
+                        .zone()
+                        .or_else(|| journey_zone(item, false).map(|j| j.0))
+                        .unwrap_or(here);
+                    at(s, &z)
+                })
                 .unwrap_or(arrive);
             stretches.last_mut().unwrap().to = Some(leave.min(arrive));
             stretches.push(Stretch {
@@ -203,13 +220,23 @@ impl Timeline {
         self.place_leaning(w, lean)
     }
 
-    /// Where an item's start (or end) happens.
+    /// Where an item's start (or end) happens: its own zone, then for a
+    /// journey the zone of where it leaves or arrives, then worked out.
     pub fn place_in(&self, item: &Item, end: bool) -> Option<Placed> {
         let w = if end {
             item.end.as_ref()
         } else {
             item.start.as_ref()
         }?;
+        if w.zone().is_none() {
+            if let Some((zone, name)) = journey_zone(item, end) {
+                return Some(Placed {
+                    zone,
+                    name,
+                    how: How::FromPlace,
+                });
+            }
+        }
         Some(self.place_as(w, item.kind, end))
     }
 
@@ -220,7 +247,18 @@ impl Timeline {
         } else {
             item.start.as_ref()
         }?;
-        at(w, &self.place_as(w, item.kind, end).zone)
+        at(w, &self.place_in(item, end)?.zone)
+    }
+
+    /// How long an item lasts, in minutes, when both ends have a time: each
+    /// end in the zone it happens in, so a flight from Melbourne at 08:15
+    /// landing in Auckland at 13:55 is 3h 40m.
+    pub fn duration_minutes(&self, item: &Item) -> Option<i64> {
+        item.start.as_ref()?.time?;
+        item.end.as_ref()?.time?;
+        let a = self.instant_in(item, false)?;
+        let b = self.instant_in(item, true)?;
+        Some((b.as_second() - a.as_second()) / 60)
     }
 
     /// `lean`: when two places fit, Some(true) takes the later, Some(false)
@@ -294,37 +332,34 @@ impl Timeline {
         at(w, &self.place(w).zone)
     }
 
-    /// The same moment on the home clock, when it isn't the same as the
-    /// local one.
-    pub fn home_time(&self, w: &When) -> Option<DateTime> {
-        w.time?;
-        let local = self.place(w).zone;
-        let t = at(w, &local)?;
-        let home = t.to_zoned(self.home.clone());
-        (home.offset() != t.to_zoned(local).offset()).then(|| home.datetime())
-    }
-
     /// What time an item happens at home, when that isn't the local time:
-    /// "Sun 08:45", or with an end time "Sat 09:45 to Sat 18:35".
+    /// "Sun 08:45", or with an end time "Sat 09:45 to Sat 18:35". Ends more
+    /// than a day apart carry their dates: "Fri 13 Nov 12:00 to Fri 20 Nov
+    /// 03:00".
     pub fn home_times(&self, item: &Item) -> Option<String> {
-        let start = item.start.as_ref().filter(|w| w.time.is_some());
-        let end = item.end.as_ref().filter(|w| w.time.is_some());
-        if start.and_then(|w| self.home_time(w)).is_none()
-            && end.and_then(|w| self.home_time(w)).is_none()
-        {
+        let moment = |end: bool| -> Option<(Timestamp, bool)> {
+            let w = if end {
+                item.end.as_ref()
+            } else {
+                item.start.as_ref()
+            }?;
+            w.time?;
+            let local = self.place_in(item, end)?.zone;
+            let t = at(w, &local)?;
+            let differs = t.to_zoned(local).offset() != t.to_zoned(self.home.clone()).offset();
+            Some((t, differs))
+        };
+        let (start, end) = (moment(false), moment(true));
+        if !start.is_some_and(|s| s.1) && !end.is_some_and(|e| e.1) {
             return None;
         }
-        let fmt = |w: &When| {
-            at(w, &self.place(w).zone).map(|t| {
-                t.to_zoned(self.home.clone())
-                    .strftime("%a %H:%M")
-                    .to_string()
-            })
-        };
-        match (start.and_then(fmt), end.and_then(fmt)) {
-            (Some(a), Some(b)) => Some(format!("{a} to {b}")),
-            (Some(a), None) => Some(a),
-            (None, Some(b)) => Some(format!("arrives {b}")),
+        let long = matches!((start, end), (Some(a), Some(b)) if b.0.as_second() - a.0.as_second() > 24 * 3600);
+        let fmt = if long { "%a %-d %b %H:%M" } else { "%a %H:%M" };
+        let show = |t: Timestamp| t.to_zoned(self.home.clone()).strftime(fmt).to_string();
+        match (start, end) {
+            (Some(a), Some(b)) => Some(format!("{} to {}", show(a.0), show(b.0))),
+            (Some(a), None) => Some(show(a.0)),
+            (None, Some(b)) => Some(format!("arrives {}", show(b.0))),
             (None, None) => None,
         }
     }
@@ -471,16 +506,18 @@ mod tests {
 
     #[test]
     fn home_time_shown_only_when_it_differs() {
-        let t = eastbound();
+        let mut t = eastbound();
         let tl = t.timeline();
-        // 10:30 in LA on 16 March is 04:30 on the 17th in Sydney (UTC+11).
-        let landing = t.items[1].end.clone().unwrap();
+        // 19:00 in Auckland is 17:00 in Sydney; 10:30 in LA on 16 March is
+        // 04:30 on the 17th in Sydney (UTC+11).
         assert_eq!(
-            tl.home_time(&landing),
-            Some(date(2027, 3, 17).at(4, 30, 0, 0))
+            tl.home_times(&t.items[1]).unwrap(),
+            "Tue 17:00 to Wed 04:30"
         );
-        let at_home = When::at(date(2027, 3, 9), time(10, 0, 0, 0));
-        assert_eq!(tl.home_time(&at_home), None);
+        let mut at_home = Item::new(Kind::Activity);
+        at_home.start = Some(When::at(date(2027, 3, 9), time(10, 0, 0, 0)));
+        t.items.push(at_home);
+        assert_eq!(t.timeline().home_times(&t.items[2]), None);
     }
 
     #[test]
@@ -510,6 +547,65 @@ mod tests {
         assert_eq!(
             tl.home_times(&t.items[1]).unwrap(),
             "Tue 17:00 to Wed 04:30"
+        );
+    }
+
+    fn dallas_trip() -> Trip {
+        // The owner's Dallas trip, without the zones typed in: places only.
+        let mut t = Trip::new("T");
+        t.home_tz = "Australia/Melbourne".into();
+        let mut f = Item::new(Kind::Travel);
+        f.start = Some(When::at(date(2026, 11, 12), time(8, 15, 0, 0)));
+        f.end = Some(When::at(date(2026, 11, 12), time(13, 55, 0, 0)));
+        let tr = f.travel.as_mut().unwrap();
+        tr.from = "Melbourne".into();
+        tr.to = "Auckland".into();
+        t.items.push(f);
+        let mut g = Item::new(Kind::Travel);
+        g.start = Some(When::at(date(2026, 11, 12), time(19, 50, 0, 0)));
+        g.end = Some(When::at(date(2026, 11, 12), time(14, 15, 0, 0)));
+        let tr = g.travel.as_mut().unwrap();
+        tr.from = "AKL".into();
+        tr.to = "Houston (IAH)".into();
+        t.items.push(g);
+        let mut h = Item::new(Kind::Stay);
+        h.start = Some(When::at(date(2026, 11, 12), time(19, 0, 0, 0)));
+        h.end = Some(When::at(date(2026, 11, 19), time(10, 0, 0, 0)));
+        t.items.push(h);
+        t
+    }
+
+    #[test]
+    fn flight_lengths_use_the_zones_of_the_places() {
+        let t = dallas_trip();
+        let tl = t.timeline();
+        // Melbourne 08:15 to Auckland 13:55 is 3h 40m (issue 10).
+        assert_eq!(tl.duration_minutes(&t.items[0]), Some(3 * 60 + 40));
+        // Auckland 19:50 to Houston 14:15 the same day is 13h 25m.
+        assert_eq!(tl.duration_minutes(&t.items[1]), Some(13 * 60 + 25));
+        let p = tl.place_in(&t.items[0], false).unwrap();
+        assert_eq!(
+            (p.name.as_str(), p.how),
+            ("Australia/Melbourne", How::FromPlace)
+        );
+        // The hotel after landing in Houston is in Texas time.
+        let p = tl.place_in(&t.items[2], false).unwrap();
+        assert_eq!(p.name, "America/Chicago");
+    }
+
+    #[test]
+    fn long_home_times_carry_dates() {
+        let t = dallas_trip();
+        let tl = t.timeline();
+        // Check-in Thu 19:00 in Texas is Fri 12:00 in Melbourne; check-out a
+        // week later.
+        assert_eq!(
+            tl.home_times(&t.items[2]).unwrap(),
+            "Fri 13 Nov 12:00 to Fri 20 Nov 03:00"
+        );
+        assert_eq!(
+            tl.home_times(&t.items[0]).unwrap(),
+            "Thu 08:15 to Thu 11:55"
         );
     }
 

@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- **Time zones from places** (roadmap B1): a journey with no time zone set takes one from where it leaves and arrives, using lists built into Waypoint (about 5,500 airports and 7,300 towns), so "Melbourne", "MEL", "Houston (IAH)" or "Kyoto" are enough. The editor shows the zone each place gives, and the time zone box says "(from the place)". A zone you set yourself always wins. Typing an airport code in From or To becomes "Melbourne (MEL)" when you leave the box.
+- **Flight lengths** use the zones of both ends, worked out or set, so Melbourne 08:15 to Auckland 13:55 is 3h 40m, not 5h 40m (issue 10).
+- **Home times** more than a day apart carry their dates ("Fri 13 Nov 12:00 to Fri 20 Nov 03:00").
+- **Airline names from codes** (B2): an airline typed as "NZ" becomes Air New Zealand, and a flight number such as "NZ120" fills in an empty airline.
+- **Quicker dates** (B4): a date can be typed day first ("14/5", "14 May", "14/5/27"), and one click on a day in the new calendar picks it and closes it, with no Save.
+
 - **Time zones across the date line** (issues 1–3 on GitHub).
   - Items are put in the order they actually happen, not by their local clock: a flight leaving Auckland on Tuesday evening now comes before the Los Angeles hotel check-in that Tuesday afternoon. Items without their own time zone take it from the journeys around them (at home before the first, then wherever each one lands).
   - A flight covering two nights (westward over the date line) marks both as "travelling overnight", in the app, the checks and the phone itinerary.

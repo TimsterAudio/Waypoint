@@ -21,10 +21,10 @@ Status: `[ ]` open, `[x]` done, `[-]` dropped, `[~]` later.
 - [ ] **A3** Passports and visas: each traveller's passport number, country and expiry (flagged when it expires within six months of getting home); each visa or e-travel authorisation (ETA, ESTA and so on) with number, countries, valid dates, entries and cost. Visas still to apply for show on the Overview. *Offline, Asked* — **Yes**
 
 ## B. Typing less
-- [ ] **B1** Time zones filled in from where a journey leaves and arrives: type "MEL", "LAX" or "Auckland" in From and To and both zones are set. Airports from OpenFlights' list; stations, ports and towns from GeoNames' list of towns over 15,000 people (about 2 MB). A zone set by hand is never overwritten. *Offline, Asked* — **Yes**
-- [ ] **B2** Airline names from their codes: "NZ" becomes Air New Zealand (OpenFlights' airline list). *Offline* — **Yes**
+- [x] **B1** Time zones filled in from where a journey leaves and arrives: type "MEL", "LAX" or "Auckland" in From and To and both zones are set. Airports from OpenFlights' list; stations, ports and towns from GeoNames' list of towns over 15,000 people (about 2 MB). A zone set by hand is never overwritten. *Offline, Asked* — **Yes**, done 2026-10-24
+- [x] **B2** Airline names from their codes: "NZ" becomes Air New Zealand (OpenFlights' airline list). *Offline* — **Yes**, done 2026-10-24
 - [ ] **B3** Places as you type: hotels and attractions with their address while typing a name, from Photon (OpenStreetMap data; free, no key, allows search as you type). A place picked this way could set its time zone too. *Online, Asked* — **Yes**
-- [ ] **B4** Quicker dates: picking a day closes the calendar straight away (or on a double-click) instead of needing Save, and dates can be typed ("14/5"). *Offline, Asked* — **Yes**
+- [x] **B4** Quicker dates: picking a day closes the calendar straight away (or on a double-click) instead of needing Save, and dates can be typed ("14/5"). *Offline, Asked* — **Yes**, done 2026-10-24
 
 ## C. Flights
 - [ ] **C1** Flight times while planning: a flight number and date give the scheduled times, airports and terminal, from a schedule service such as AeroDataBox (check it reaches far enough ahead). *Paid, Asked*

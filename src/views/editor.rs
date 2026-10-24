@@ -5,6 +5,7 @@ use eframe::egui::{self, Ui};
 use jiff::civil::Date;
 use waypoint_core::{money, Kind, Mode, Status, Travel, When};
 
+use waypoint_core::places;
 use waypoint_core::zones::{How, Placed};
 
 use crate::app::today;
@@ -73,10 +74,11 @@ fn when_input(
         ui.horizontal(|ui| {
             ui.add_space(26.0);
             let hint = match &placed {
+                Some(p) if p.how == How::FromPlace => format!("{} (from the place)", p.name),
                 Some(p) => format!("{} (worked out)", p.name),
                 None => "Time zone".into(),
             };
-            let r = ui::text_input(ui, &mut w.tz, &hint, 236.0);
+            let r = ui::text_input(ui, &mut w.tz, &hint, 250.0);
             r.on_hover_text(
                 "Where this happens, such as Asia/Tokyo. Set it on journeys that cross time \
                  zones; other items take theirs from the journeys around them.",
@@ -139,11 +141,52 @@ fn opt_date(ui: &mut Ui, id: &str, label: &str, value: &mut Option<Date>, defaul
 }
 
 /// A labelled one-line field in a two-column form.
-fn line(ui: &mut Ui, label: &str, value: &mut String, hint: &str) {
+fn line(ui: &mut Ui, label: &str, value: &mut String, hint: &str) -> egui::Response {
     ui.horizontal(|ui| {
         form_label(ui, label);
-        ui::text_input(ui, value, hint, ui.available_width());
+        ui::text_input(ui, value, hint, ui.available_width())
+    })
+    .inner
+}
+
+/// Under From and To: the time zone the place gives, or that it isn't known.
+fn place_note(ui: &mut Ui, text: &str) {
+    if text.trim().is_empty() {
+        return;
+    }
+    let p = ui::pal(ui);
+    ui.horizontal_top(|ui| {
+        ui.add_space(108.0);
+        match places::zone_for(text) {
+            Some(z) => ui::small(ui, format!("Time zone {z}"), p.ink2),
+            None => ui::small(
+                ui,
+                "Not a place Waypoint knows. Set the time zone above if it matters.",
+                p.ink2,
+            ),
+        };
     });
+}
+
+/// An airline code becomes its name ("NZ" to Air New Zealand), with the code
+/// kept on the flight number; a flight number with a code fills in an empty
+/// airline.
+fn tidy_airline(t: &mut Travel) {
+    if t.mode != Mode::Flight {
+        return;
+    }
+    if let Some(name) = places::airline(&t.carrier) {
+        let code = t.carrier.trim().to_uppercase();
+        let number = t.number.trim();
+        if !number.is_empty() && number.chars().all(|c| c.is_ascii_digit()) {
+            t.number = format!("{code}{number}");
+        }
+        t.carrier = name.to_string();
+    } else if t.carrier.trim().is_empty() {
+        if let Some(name) = places::airline_code_of(&t.number).and_then(places::airline) {
+            t.carrier = name.to_string();
+        }
+    }
 }
 
 /// The label to the left of a form field, in a fixed-width column.
@@ -259,7 +302,7 @@ impl Editor {
             end_default,
             end_place,
         );
-        if let Some(m) = item.duration_minutes() {
+        if let Some(m) = tl.duration_minutes(&item) {
             if item.kind != Kind::Stay {
                 ui::small(
                     ui,
@@ -296,10 +339,32 @@ impl Editor {
                 Mode::Car => ("Hire firm", "Car / class"),
                 _ => ("Company", "Number"),
             };
-            line(ui, carrier, &mut t.carrier, "");
-            line(ui, number, &mut t.number, "");
-            line(ui, "From", &mut t.from, "");
-            line(ui, "To", &mut t.to, "");
+            let flight = t.mode == Mode::Flight;
+            let hint = if flight {
+                "Code or name, such as NZ"
+            } else {
+                ""
+            };
+            if line(ui, carrier, &mut t.carrier, hint).lost_focus() {
+                tidy_airline(t);
+            }
+            let hint = if flight { "Such as NZ120" } else { "" };
+            if line(ui, number, &mut t.number, hint).lost_focus() {
+                tidy_airline(t);
+            }
+            let hint = if flight {
+                "Airport code or town, such as MEL"
+            } else {
+                "Town or station"
+            };
+            for (label, value) in [("From", &mut t.from), ("To", &mut t.to)] {
+                if line(ui, label, value, hint).lost_focus() {
+                    if let Some(tidy) = places::tidy_airport(value) {
+                        *value = tidy;
+                    }
+                }
+                place_note(ui, value);
+            }
             line(
                 ui,
                 if t.mode == Mode::Flight {

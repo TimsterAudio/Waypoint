@@ -244,7 +244,9 @@ fn details(trip: &Trip, out: &mut Vec<Warning>) {
         for (w, what, is_end) in [(&i.start, "start", false), (&i.end, "end", true)] {
             let Some(w) = w else { continue };
             if i.status != Status::Cancelled
-                && tl.place_as(w, i.kind, is_end).how == crate::zones::How::Ambiguous
+                && tl
+                    .place_in(i, is_end)
+                    .is_some_and(|p| p.how == crate::zones::How::Ambiguous)
             {
                 out.push(self::w(
                     Severity::Check,

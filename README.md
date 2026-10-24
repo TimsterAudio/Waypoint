@@ -35,7 +35,7 @@ Waypoint doesn't sign in to Google itself; it saves to a folder that Google Driv
 - **Costs**: totals, the budget, cost by kind, what's still owing and when, and the exchange rates.
 - **Trip details**: name, dates, home currency, budget, who's going, notes.
 
-**Time zones.** Set the zone on journeys that cross them (departure and arrival); everything else takes its zone from them: at home before the first journey, then wherever each one lands. Items are then shown in the order they really happen, flights over the date line that cover two nights count for both, and bookings in another zone show the time at home too. If a time without a zone could be in two places (flying east over the date line repeats part of a day), Waypoint asks you to set one.
+**Time zones.** Journeys take their time zones from where they leave and arrive ("Melbourne", "MEL", "Houston (IAH)", "Kyoto"), from lists of airports and towns built into Waypoint; set a zone yourself only for a place it doesn't know. Everything else takes its zone from the journeys: at home before the first, then wherever each one lands. Items are shown in the order they really happen, flight lengths allow for the time difference, flights over the date line that cover two nights count for both, and bookings in another zone show the time at home too. If a time without a zone could be in two places (flying east over the date line repeats part of a day), Waypoint asks you to set one.
 
 Click any item to open it on the right. Changes save by themselves a moment after you stop typing.
 
@@ -75,5 +75,7 @@ cargo test --workspace
 ```
 
 Linux needs `libxkbcommon-dev libwayland-dev libgl1-mesa-dev` to build. `crates/waypoint-core` holds everything that doesn't need a window (the trip model, money, checks, files, rates, the phone page) and is unit tested; `src/` is the window. `cargo run -p waypoint-core --example phone_page -- out.html` writes the sample's phone page.
+
+Airport and airline lists are from [OpenFlights](https://openflights.org/data) (Open Database License); towns and their time zones from [Natural Earth](https://www.naturalearthdata.com) (public domain) via the city-timezones package. `crates/waypoint-core/data/build_places.py` rebuilds them.
 
 The look comes from [Isobar](https://github.com/TimsterAudio/Isobar): pale paper, slate ink, a violet pen, and the Barlow fonts (SIL Open Font License, in `assets/fonts`).

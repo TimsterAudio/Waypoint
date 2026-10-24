@@ -580,18 +580,232 @@ pub fn text_input(ui: &mut Ui, value: &mut String, hint: &str, width: f32) -> Re
     )
 }
 
-/// A date with a calendar pop-up, shown day first. Returns true if changed.
+/// Reads a date typed day first: "14/5", "14/5/27", "14 May", "Sat 14 May
+/// 2027", "2027-05-14". A missing year is taken from `like`.
+pub fn parse_date(text: &str, like: jiff::civil::Date) -> Option<jiff::civil::Date> {
+    const MONTHS: [&str; 12] = [
+        "jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec",
+    ];
+    let t = text.trim().to_lowercase();
+    let parts: Vec<&str> = t
+        .split(|c: char| c == '/' || c == '-' || c == '.' || c == ',' || c.is_whitespace())
+        .filter(|p| !p.is_empty())
+        .collect();
+    // ISO: 2027-05-14.
+    if parts.len() == 3 && parts[0].len() == 4 {
+        let y = parts[0].parse().ok()?;
+        return jiff::civil::Date::new(y, parts[1].parse().ok()?, parts[2].parse().ok()?).ok();
+    }
+    let mut day: Option<i8> = None;
+    let mut month: Option<i8> = None;
+    let mut year: Option<i16> = None;
+    for p in parts {
+        if let Ok(n) = p.parse::<i16>() {
+            if day.is_none() {
+                day = Some(i8::try_from(n).ok()?);
+            } else if month.is_none() {
+                month = Some(i8::try_from(n).ok()?);
+            } else if year.is_none() {
+                year = Some(match p.len() {
+                    2 => 2000 + n,
+                    4 => n,
+                    _ => return None,
+                });
+            } else {
+                return None;
+            }
+        } else if p.len() >= 3 {
+            if let Some(m) = MONTHS.iter().position(|m| p.starts_with(m)) {
+                month = Some(m as i8 + 1);
+            }
+            // Anything else ("sat", "saturday") is a weekday and ignored.
+        } else {
+            return None;
+        }
+    }
+    jiff::civil::Date::new(year.unwrap_or(like.year()), month?, day?).ok()
+}
+
+/// A date: a box to type it in, day first, and a calendar button. One click
+/// on a day in the calendar picks it and closes it. Returns true if changed.
 pub fn date_input(ui: &mut Ui, id: &str, date: &mut jiff::civil::Date) -> bool {
+    let p = pal(ui);
     let before = *date;
-    ui.add(
-        egui_extras::DatePickerButton::new(date)
-            .id_salt(id)
-            .format("%a %-d %b %Y")
-            .calendar_week(false)
-            .highlight_weekends(true)
-            .start_end_years(2020..=2045),
-    );
+    ui.horizontal(|ui| {
+        ui.spacing_mut().item_spacing.x = 4.0;
+        let shown = date.strftime("%a %-d %b %Y").to_string();
+        let (r, typed) = typed_input(ui, egui::Id::new((id, "typed")), shown, "14/5", 128.0);
+        if let Some(t) = typed {
+            if let Some(d) = parse_date(&t, *date) {
+                *date = d;
+            }
+        }
+        r.on_hover_text("Type a date, day first: 14/5, 14 May or 14/5/27");
+
+        let (rect, button) = ui.allocate_exact_size(vec2(30.0, 34.0), Sense::click());
+        let hovered = button.hovered();
+        if hovered {
+            ui.painter()
+                .rect_filled(rect, CornerRadius::same(RADIUS), p.faint);
+        }
+        calendar_icon(
+            ui.painter(),
+            rect.center(),
+            if hovered { p.ink } else { p.ink2 },
+        );
+        let button = button
+            .on_hover_cursor(CursorIcon::PointingHand)
+            .on_hover_text("Pick from a calendar");
+        let shown_month = egui::Id::new((id, "month"));
+        if button.clicked() {
+            ui.data_mut(|d| d.insert_temp(shown_month, (date.year(), date.month())));
+        }
+        let picked = egui::Popup::menu(&button)
+            .close_behavior(egui::PopupCloseBehavior::CloseOnClickOutside)
+            .show(|ui| {
+                let (mut y, mut m) = ui
+                    .data(|d| d.get_temp::<(i16, i8)>(shown_month))
+                    .unwrap_or((date.year(), date.month()));
+                let picked = month_grid(ui, &mut y, &mut m, *date);
+                ui.data_mut(|d| d.insert_temp(shown_month, (y, m)));
+                picked
+            })
+            .and_then(|r| r.inner);
+        if let Some(d) = picked {
+            *date = d;
+            egui::Popup::close_id(ui.ctx(), egui::Popup::default_response_id(&button));
+        }
+    });
     *date != before
+}
+
+fn calendar_icon(painter: &egui::Painter, c: egui::Pos2, color: Color32) {
+    let r = Rect::from_center_size(c + vec2(0.0, 1.0), vec2(14.0, 12.0));
+    let stroke = Stroke::new(1.5, color);
+    painter.rect_stroke(r, 2, stroke, StrokeKind::Middle);
+    painter.line_segment(
+        [
+            pos2(r.left(), r.top() + 3.5),
+            pos2(r.right(), r.top() + 3.5),
+        ],
+        stroke,
+    );
+    for x in [r.left() + 4.0, r.right() - 4.0] {
+        painter.line_segment([pos2(x, r.top() - 2.5), pos2(x, r.top() + 1.0)], stroke);
+    }
+}
+
+/// A month of days, Monday first, with arrows to move a month. Returns the
+/// day clicked.
+fn month_grid(
+    ui: &mut Ui,
+    year: &mut i16,
+    month: &mut i8,
+    selected: jiff::civil::Date,
+) -> Option<jiff::civil::Date> {
+    let p = pal(ui);
+    let first = jiff::civil::Date::new(*year, *month, 1).ok()?;
+    let mut picked = None;
+    ui.spacing_mut().item_spacing = vec2(2.0, 2.0);
+    ui.horizontal(|ui| {
+        let step = |y: &mut i16, m: &mut i8, by: i8| {
+            let total = *y as i32 * 12 + (*m as i32 - 1) + by as i32;
+            *y = (total / 12) as i16;
+            *m = (total % 12) as i8 + 1;
+        };
+        if ui
+            .add(
+                egui::Button::new("‹")
+                    .frame(false)
+                    .min_size(vec2(28.0, 28.0)),
+            )
+            .clicked()
+        {
+            step(year, month, -1);
+        }
+        ui.add_sized(
+            [170.0, 28.0],
+            egui::Label::new(
+                egui::RichText::new(first.strftime("%B %Y").to_string())
+                    .font(theme::semi(15.0))
+                    .color(p.ink),
+            ),
+        );
+        if ui
+            .add(
+                egui::Button::new("›")
+                    .frame(false)
+                    .min_size(vec2(28.0, 28.0)),
+            )
+            .clicked()
+        {
+            step(year, month, 1);
+        }
+    });
+    let today = jiff::Zoned::now().date();
+    let cell = vec2(32.0, 28.0);
+    egui::Grid::new(ui.id().with("days"))
+        .spacing(vec2(2.0, 2.0))
+        .show(ui, |ui| {
+            for d in ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"] {
+                ui.add_sized(
+                    cell,
+                    egui::Label::new(egui::RichText::new(d).font(theme::body(12.0)).color(p.ink2)),
+                );
+            }
+            ui.end_row();
+            let lead = first.weekday().to_monday_zero_offset() as i32;
+            let mut day = first.checked_sub(jiff::Span::new().days(lead)).ok();
+            for _ in 0..6 {
+                for _ in 0..7 {
+                    let Some(d) = day else { break };
+                    let in_month = d.month() == first.month();
+                    let on = d == selected;
+                    let (rect, resp) = ui.allocate_exact_size(cell, Sense::click());
+                    let fill = if on {
+                        p.trace
+                    } else if resp.hovered() {
+                        p.faint
+                    } else {
+                        Color32::TRANSPARENT
+                    };
+                    ui.painter()
+                        .rect_filled(rect, CornerRadius::same(RADIUS), fill);
+                    if d == today && !on {
+                        ui.painter().rect_stroke(
+                            rect.shrink(1.0),
+                            CornerRadius::same(RADIUS),
+                            Stroke::new(1.0, p.trace),
+                            StrokeKind::Inside,
+                        );
+                    }
+                    let color = if on {
+                        if p.dark {
+                            p.paper
+                        } else {
+                            Color32::WHITE
+                        }
+                    } else if in_month {
+                        p.ink
+                    } else {
+                        alpha(p.ink2, 0.5)
+                    };
+                    ui.painter().text(
+                        rect.center(),
+                        Align2::CENTER_CENTER,
+                        d.day().to_string(),
+                        theme::medium(14.0),
+                        color,
+                    );
+                    if resp.on_hover_cursor(CursorIcon::PointingHand).clicked() {
+                        picked = Some(d);
+                    }
+                    day = d.tomorrow().ok();
+                }
+                ui.end_row();
+            }
+        });
+    picked
 }
 
 /// A drop-down of `options`, showing the chosen one's label.
@@ -808,6 +1022,21 @@ pub fn time_input(ui: &mut Ui, id: egui::Id, value: &mut Option<jiff::civil::Tim
 mod tests {
     use super::*;
     use jiff::civil::time;
+
+    #[test]
+    fn reads_dates_people_type() {
+        use jiff::civil::date;
+        let like = date(2026, 11, 1);
+        assert_eq!(parse_date("14/5", like), Some(date(2026, 5, 14)));
+        assert_eq!(parse_date("14/5/27", like), Some(date(2027, 5, 14)));
+        assert_eq!(parse_date("14 May", like), Some(date(2026, 5, 14)));
+        assert_eq!(parse_date("Sat 14 May 2027", like), Some(date(2027, 5, 14)));
+        assert_eq!(parse_date("12 november", like), Some(date(2026, 11, 12)));
+        assert_eq!(parse_date("2027-05-14", like), Some(date(2027, 5, 14)));
+        assert_eq!(parse_date("31/2", like), None);
+        assert_eq!(parse_date("14", like), None);
+        assert_eq!(parse_date("soon", like), None);
+    }
 
     #[test]
     fn reads_times_people_type() {
