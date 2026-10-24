@@ -1,0 +1,403 @@
+<title>Waypoint roadmap review</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;600&display=swap">
+<style>
+/* Layout: one sheet of Waypoint's paper; groups stacked, each item a ruled row with three tick boxes and a note line. */
+:root {
+  --paper: #e9eee8;
+  --sheet: #f6f8f4;
+  --grid: #cdd8cb;
+  --ink: #1c2633;
+  --ink-2: #5a6570;
+  --trace: #5b3a9e;
+  --yes: #2f7a3e;
+  --later: #a8700c;
+  --no: #b3362b;
+  --display: "Barlow Condensed", "Arial Narrow", system-ui, sans-serif;
+  --body: "Barlow", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #131a20; --sheet: #19222a; --grid: #2a3741;
+    --ink: #e6ebee; --ink-2: #9aa7b2; --trace: #b49cf0;
+    --yes: #7fcf8b; --later: #e2b04e; --no: #f0806c;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #131a20; --sheet: #19222a; --grid: #2a3741;
+  --ink: #e6ebee; --ink-2: #9aa7b2; --trace: #b49cf0;
+  --yes: #7fcf8b; --later: #e2b04e; --no: #f0806c;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font: 400 15px/1.5 var(--body);
+  font-variant-numeric: tabular-nums;
+}
+.wrap {
+  max-width: 920px;
+  margin: 0 auto;
+  padding-block: 32px 64px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+h1, h2, h3 { font-family: var(--display); font-weight: 600; margin: 0; text-wrap: balance; }
+h1 { font-size: 40px; line-height: 1.05; }
+h2 { font-size: 24px; line-height: 1.15; }
+p { margin: 0; max-width: 68ch; }
+a { color: var(--trace); }
+code { font-size: 0.92em; }
+.muted { color: var(--ink-2); }
+.small { font-size: 13px; }
+
+header { display: flex; flex-direction: column; gap: 10px; }
+.mark { display: flex; align-items: center; gap: 10px; font: 600 20px/1 var(--display); color: var(--ink-2); }
+.mark svg { width: 22px; height: 22px; flex: none; }
+.legend { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 13px; color: var(--ink-2); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+
+.tally {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 10px 20px;
+  padding: 12px 16px; border: 1px solid var(--grid); border-radius: 6px; background: var(--sheet);
+}
+.tally b { font: 600 22px/1 var(--display); margin-right: 4px; }
+.tally .yes b { color: var(--yes); } .tally .later b { color: var(--later); } .tally .no b { color: var(--no); }
+.tally .actions { margin-left: auto; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+button {
+  font: 600 14px/1 var(--body); cursor: pointer; border-radius: 6px; padding: 9px 14px;
+  border: 1px solid var(--grid); background: transparent; color: var(--ink);
+}
+button:hover { border-color: var(--ink-2); }
+button.primary { background: var(--ink); border-color: var(--ink); color: var(--paper); }
+button.primary:hover { background: var(--trace); border-color: var(--trace); }
+:focus-visible { outline: 2px solid var(--trace); outline-offset: 2px; }
+.copied { font-size: 13px; color: var(--yes); min-width: 6em; }
+
+section.group { display: flex; flex-direction: column; gap: 6px; }
+.group-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; border-bottom: 2px solid var(--ink); padding-bottom: 6px; }
+.group-head .code { font: 600 24px/1 var(--display); color: var(--trace); }
+.group-head p { font-size: 14px; color: var(--ink-2); }
+
+ol.items { list-style: none; margin: 0; padding: 0; }
+.item {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) auto;
+  gap: 4px 14px;
+  align-items: start;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--grid);
+  break-inside: avoid;
+}
+.id { font: 600 17px/1.35 var(--display); color: var(--ink-2); }
+.what { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.what h3 { font-size: 18px; line-height: 1.3; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; }
+.what p { font-size: 14px; color: var(--ink-2); }
+.tag {
+  font: 500 11px/1 var(--body); letter-spacing: 0.04em; text-transform: uppercase;
+  padding: 3px 6px; border-radius: 3px; border: 1px solid var(--grid); color: var(--ink-2); white-space: nowrap;
+}
+.tag.offline { border-color: var(--yes); color: var(--yes); }
+.tag.online { border-color: var(--trace); color: var(--trace); }
+.tag.paid { border-color: var(--later); color: var(--later); }
+.asked { font: 600 12px/1 var(--body); color: var(--trace); white-space: nowrap; }
+
+.completed .group-head .code { color: var(--yes); }
+ol.done-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 28px; }
+.done-list li { display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 2px 10px; padding: 9px 0; border-bottom: 1px solid var(--grid); break-inside: avoid; }
+.done-list .id { font-size: 15px; }
+.done-list h3 { font-size: 16px; line-height: 1.3; }
+.done-list p { font-size: 13px; color: var(--ink-2); }
+@media (max-width: 680px) { ol.done-list { grid-template-columns: 1fr; } }
+.progress { font-size: 14px; color: var(--ink-2); }
+.progress b { color: var(--yes); font-weight: 600; }
+
+.choice { display: flex; gap: 6px; }
+.choice label {
+  position: relative; display: inline-flex; align-items: center; gap: 6px; cursor: pointer;
+  font: 500 13px/1 var(--body); color: var(--ink-2);
+  padding: 7px 9px; border: 1px solid var(--grid); border-radius: 5px; user-select: none;
+}
+.choice input { position: absolute; opacity: 0; pointer-events: none; }
+.choice .box { width: 13px; height: 13px; border: 1.5px solid currentColor; border-radius: 2px; flex: none; }
+.choice label:hover { border-color: var(--ink-2); color: var(--ink); }
+.choice input:focus-visible + .box { outline: 2px solid var(--trace); outline-offset: 2px; }
+.choice input:checked + .box { background: currentColor; }
+.choice label.y:has(input:checked) { color: var(--yes); border-color: var(--yes); }
+.choice label.l:has(input:checked) { color: var(--later); border-color: var(--later); }
+.choice label.n:has(input:checked) { color: var(--no); border-color: var(--no); }
+
+.note { grid-column: 2 / -1; }
+.note input {
+  width: 100%; font: 400 14px/1.3 var(--body); color: var(--ink);
+  background: transparent; border: 0; border-bottom: 1px dashed var(--grid); padding: 4px 0;
+}
+.note input::placeholder { color: var(--ink-2); opacity: 0.7; }
+.note input:focus { outline: none; border-bottom-color: var(--trace); }
+
+textarea#own-notes {
+  width: 100%; min-height: 150px; resize: vertical;
+  font: 400 15px/34px var(--body); color: var(--ink); padding: 0 4px;
+  border: 0; border-top: 1px solid var(--grid); border-radius: 0;
+  background: repeating-linear-gradient(to bottom, transparent 0 33px, var(--grid) 33px 34px);
+}
+textarea#own-notes:focus { outline: none; }
+
+@media (max-width: 680px) {
+  h1 { font-size: 32px; }
+  .item { grid-template-columns: 34px minmax(0, 1fr); }
+  .choice { grid-column: 2; }
+  .tally .actions { margin-left: 0; }
+}
+
+/* Paper: always light, no fills, ticks show as pen-ready boxes. */
+@media print {
+  :root, :root[data-theme="dark"], :root:not([data-theme="light"]) {
+    --paper: #fff; --sheet: #fff; --grid: #b9c4b8; --ink: #111; --ink-2: #444;
+    --trace: #4a2f85; --yes: #1f5e2d; --later: #7a5208; --no: #8f2a22; color-scheme: light;
+  }
+  body { font-size: 12px; }
+  .wrap { padding: 0; gap: 16px; max-width: none; }
+  .tally .actions, .copied, .screen-only { display: none !important; }
+  .item { padding: 7px 0; }
+  .note input { border-bottom: 1px solid var(--grid); }
+  .note input:placeholder-shown::placeholder { color: transparent; }
+  section.group { break-inside: auto; }
+  .group-head { break-after: avoid; }
+  @page { margin: 14mm; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="mark">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1.5 22.5 12 12 22.5 1.5 12Z" fill="none" stroke="var(--ink)" stroke-width="2"/><circle cx="12" cy="12" r="3.5" fill="var(--trace)"/></svg>
+      Waypoint
+    </div>
+    <h1>Roadmap review</h1>
+    <p>Updates and add-ons for Waypoint, yours and mine. For each item, mark <b>Yes</b>, <b>Later</b> or <b>No</b>, and jot a note if you like, then press <b>Copy my choices</b> and paste them to me. Items carry the same IDs as <code>ROADMAP.md</code> in the repo, so you can also just say "do B1 and E1". Problems go in <a href="https://github.com/TimsterAudio/Waypoint/issues" rel="noopener">GitHub issues</a>, not here.</p>
+    <div class="legend">
+      <span><span class="tag offline">Offline</span> works with no internet</span>
+      <span><span class="tag online">Online</span> a free online service, off until you switch it on</span>
+      <span><span class="tag paid">Paid</span> needs a paid service</span>
+      <span><span class="asked">Your idea</span></span>
+    </div>
+  </header>
+
+  <p class="progress" id="progress"></p>
+
+  <div class="tally" aria-live="polite">
+    <span class="yes"><b id="n-yes">0</b>yes</span>
+    <span class="later"><b id="n-later">0</b>later</span>
+    <span class="no"><b id="n-no">0</b>no</span>
+    <span class="muted"><b id="n-open">0</b>to decide</span>
+    <span class="actions">
+      <span class="copied" id="copied" role="status"></span>
+      <button type="button" class="primary" id="copy">Copy my choices</button>
+      <button type="button" id="clear">Clear all</button>
+    </span>
+  </div>
+  <p class="small muted screen-only" id="clear-confirm" hidden>
+    Clear every mark and note on this page? Items already decided go back to how they were. <button type="button" id="clear-yes">Clear them</button> <button type="button" id="clear-no">Keep them</button>
+  </p>
+
+  <textarea id="copy-fallback" class="screen-only" readonly hidden aria-label="Your choices as text" style="width:100%;min-height:160px;font:400 13px/1.5 var(--body);background:var(--sheet);color:var(--ink);border:1px solid var(--grid);border-radius:6px;padding:10px"></textarea>
+
+  <div id="groups"></div>
+
+  <section class="group own">
+    <div class="group-head"><span class="code">+</span><h2>Your own ideas</h2><p>Anything not listed. I'll give each an ID.</p></div>
+    <label for="own-notes" class="small muted screen-only">Type here, or write on the printed sheet.</label>
+    <textarea id="own-notes" spellcheck="true"></textarea>
+  </section>
+
+  <section class="group completed" id="completed">
+    <div class="group-head"><span class="code">✓</span><h2>Completed</h2><p>Built and in the Latest build. Not part of Copy my choices.</p></div>
+    <ol class="done-list" id="done-list"></ol>
+  </section>
+
+  <p class="small muted">Waypoint 0.1.0 and later · updated 24 October 2026</p>
+</div>
+
+<script>
+// [id, title, detail, tag, asked]
+const GROUPS = [
+  { code: "A", title: "Asked for after the first runs", blurb: "Already a yes; to build once the first trip has been tried.", items: [
+    ["A1", "Pet care while away", "Where the pets are boarded or who's minding them, drop-off and pick-up, contact, cost and status. The Overview flags trip days with no care booked.", "offline", true],
+    ["A2", "Travel insurance", "Insurer, policy number, who's covered, cover dates, the 24-hour emergency number, claims contact and excess. Near the top of the phone itinerary; the Overview flags days outside the cover.", "offline", true],
+    ["A3", "Passports and visas", "Each traveller's passport and expiry (flagged within six months of getting home), and each visa or ETA/ESTA with its number, countries and dates.", "offline", true],
+  ]},
+  { code: "B", title: "Typing less", blurb: "", items: [
+    ["B1", "Time zones from where you leave and arrive", "Type \"MEL\", \"LAX\" or \"Auckland\" in From and To and both zones are set, from built-in lists of airports and towns. A zone you set yourself is never changed.", "offline", true],
+    ["B2", "Airline names from their codes", "\"NZ\" becomes Air New Zealand, from a built-in list.", "offline"],
+    ["B3", "Places as you type", "Hotels and attractions with their address while you type a name, from OpenStreetMap's free search. Could set the time zone too.", "online", true],
+    ["B4", "Quicker dates", "Picking a day closes the calendar straight away, no Save needed, and dates can be typed (\"14/5\").", "offline", true],
+  ]},
+  { code: "C", title: "Flights", blurb: "", items: [
+    ["C1", "Flight times while planning", "A flight number and date fill in the times, airports and terminal, from a schedule service such as AeroDataBox.", "paid", true],
+    ["C2", "Live flight status on the day", "Actual departure, delays and landing, from the Flightradar24 API (its own plans, not a Silver or Gold account). Goes with the live phone page, F1.", "paid", true],
+    ["C3", "Baggage, seat and meal", "Baggage allowance, seat and meal on each flight.", "offline"],
+  ]},
+  { code: "D", title: "Before and during the trip", blurb: "From other travel apps.", items: [
+    ["D1", "Before you go", "A to-do list with due dates: foreign cash, eSIM or roaming, mail hold, home security, airport parking.", "offline"],
+    ["D2", "Packing list", "Reusable from one trip to the next.", "offline"],
+    ["D3", "Spending on the trip", "What you actually spend each day against a daily budget, separate from bookings.", "offline"],
+    ["D4", "Emergency and local information", "Embassy, local emergency number, power plugs, tipping, time difference from home.", "offline"],
+    ["D5", "Loyalty numbers", "Frequent flyer and hotel programmes for each traveller.", "offline"],
+  ]},
+  { code: "E", title: "Sharing and printing", blurb: "", items: [
+    ["E1", "Calendar export", "A calendar file beside the trip, so bookings show in the iPhone's calendar.", "offline"],
+    ["E2", "Attachments", "Link tickets and confirmation PDFs (kept in the same Drive folder) to a booking, and open them from the phone page.", "offline"],
+    ["E3", "Save straight to PDF", "A PDF from Waypoint itself, without going through a browser.", "offline"],
+    ["E4", "Notes on the itinerary to share", "Choose which notes family and friends see; all notes are left off now.", "offline"],
+  ]},
+  { code: "F", title: "Bigger features", blurb: "", items: [
+    ["F1", "A live phone page", "A web app on the iPhone's home screen that signs in to Google and reads and edits the trip in Drive. Needs a Google Cloud project, set up once.", "online"],
+    ["F2", "Google Drive directly on Linux", "Through that same Google project, so rclone isn't needed.", "online"],
+    ["F3", "Travellers and split costs", "Who each booking is for, and who owes whom.", "offline"],
+    ["F4", "Import from a spreadsheet", "Bring in a trip planned the old way, from a CSV.", "offline"],
+    ["F5", "Merge two people's changes", "Item by item, instead of choosing one person's version.", "offline"],
+    ["F6", "Copy a past trip", "Start a new trip from an old one.", "offline"],
+  ]},
+  { code: "G", title: "Parked", blurb: "Need services Waypoint doesn't use yet.", items: [
+    ["G1", "Maps", "Where each booking is, on a map (needs map tiles from the internet).", "online"],
+    ["G2", "Read booking emails", "Fill in bookings from confirmation emails.", "online"],
+  ]},
+  { code: "Z", title: "Your tweaks", blurb: "Built from your notes while planning the first trip.", items: [
+    ["Z1", "Home time on bookings", "The time at home for bookings in other time zones, start and end, on its own line in the itinerary and on the phone page.", "offline", true],
+    ["Z2", "Home time zone", "Set on Trip details; new trips take it from the computer.", "offline"],
+    ["Z3", "Address and phone for stays", "On the itinerary under each stay.", "offline", true],
+    ["Z4", "Itinerary to share", "Booked items without costs, references or notes, for family and friends; prints to PDF from the browser.", "offline", true],
+  ]},
+];
+// Built and in the Latest build.
+const DONE = new Set(["Z1", "Z2", "Z3", "Z4"]);
+// Decided already (ROADMAP.md); shown ticked until changed here.
+const DECIDED = { A1: "yes", A2: "yes", A3: "yes" };
+const TAG = { offline: "Offline", online: "Online", paid: "Paid" };
+const KEY = "waypoint-roadmap-v1";
+
+let state = { marks: {}, notes: {}, own: "" };
+try { state = Object.assign(state, JSON.parse(localStorage.getItem(KEY) || "{}")); } catch (e) {}
+for (const [id, v] of Object.entries(DECIDED)) if (!(id in state.marks)) state.marks[id] = v;
+function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
+
+const host = document.getElementById("groups");
+for (const g of GROUPS) {
+  if (g.items.every((i) => DONE.has(i[0]))) continue;
+  const sec = document.createElement("section");
+  sec.className = "group";
+  sec.innerHTML = `<div class="group-head"><span class="code">${g.code}</span><h2>${g.title}</h2>${g.blurb ? `<p>${g.blurb}</p>` : ""}</div>`;
+  const ol = document.createElement("ol");
+  ol.className = "items";
+  for (const [id, title, detail, tag, asked] of g.items) {
+    if (DONE.has(id)) continue;
+    const li = document.createElement("li");
+    li.className = "item";
+    li.innerHTML = `
+      <span class="id">${id}</span>
+      <div class="what">
+        <h3>${title} <span class="tag ${tag}">${TAG[tag]}</span>${asked ? ` <span class="asked">Your idea</span>` : ""}</h3>
+        <p>${detail}</p>
+      </div>
+      <div class="choice" role="radiogroup" aria-label="${id} decision">
+        ${[["y", "yes", "Yes"], ["l", "later", "Later"], ["n", "no", "No"]].map(([c, v, l]) =>
+          `<label class="${c}"><input type="radio" name="m-${id}" id="m-${id}-${v}" value="${v}"><span class="box"></span>${l}</label>`).join("")}
+      </div>
+      <div class="note"><input type="text" id="note-${id}" aria-label="Note for ${id}" placeholder="Note"></div>`;
+    ol.append(li);
+    li.querySelectorAll("input[type=radio]").forEach((r) => {
+      if (state.marks[id] === r.value) r.checked = true;
+      r.addEventListener("click", () => {
+        // A second click on the chosen box clears it.
+        if (state.marks[id] === r.value) { r.checked = false; state.marks[id] = ""; }
+        else state.marks[id] = r.value;
+        save(); tally();
+      });
+    });
+    const note = li.querySelector(".note input");
+    note.value = state.notes[id] || "";
+    note.addEventListener("input", () => { state.notes[id] = note.value; save(); });
+  }
+  sec.append(ol);
+  host.append(sec);
+}
+const doneList = document.getElementById("done-list");
+for (const g of GROUPS) {
+  for (const [id, title, detail] of g.items) {
+    if (!DONE.has(id)) continue;
+    const li = document.createElement("li");
+    li.innerHTML = `<span class="id">${id}</span><div><h3>${title}</h3><p>${detail}</p></div>`;
+    doneList.append(li);
+  }
+}
+const own = document.getElementById("own-notes");
+own.value = state.own || "";
+own.addEventListener("input", () => { state.own = own.value; save(); });
+
+const ALL = GROUPS.flatMap((g) => g.items.map((i) => i[0])).filter((id) => !DONE.has(id));
+function tally() {
+  const c = { yes: 0, later: 0, no: 0 };
+  for (const id of ALL) if (state.marks[id]) c[state.marks[id]]++;
+  document.getElementById("n-yes").textContent = c.yes;
+  document.getElementById("n-later").textContent = c.later;
+  document.getElementById("n-no").textContent = c.no;
+  document.getElementById("n-open").textContent = ALL.length - c.yes - c.later - c.no;
+}
+tally();
+document.getElementById("progress").innerHTML =
+  `<b>${DONE.size} done</b> so far, listed under <a href="#completed">Completed</a> at the bottom. ${ALL.length} below to decide or build.`;
+
+function summary() {
+  const lines = ["Waypoint roadmap choices"];
+  const titles = Object.fromEntries(GROUPS.flatMap((g) => g.items.map((i) => [i[0], i[1]])));
+  for (const [v, label] of [["yes", "Yes"], ["later", "Later"], ["no", "No"]]) {
+    const ids = ALL.filter((id) => state.marks[id] === v);
+    if (!ids.length) continue;
+    lines.push("", label + ":");
+    for (const id of ids) lines.push(`- ${id} ${titles[id]}${state.notes[id] ? " — " + state.notes[id] : ""}`);
+  }
+  const open = ALL.filter((id) => !state.marks[id]);
+  if (open.length) lines.push("", "Not decided: " + open.join(", "));
+  for (const id of open) if (state.notes[id]) lines.push(`- ${id} note: ${state.notes[id]}`);
+  if ((state.own || "").trim()) lines.push("", "My own ideas:", state.own.trim());
+  return lines.join("\n");
+}
+const copied = document.getElementById("copied");
+document.getElementById("copy").addEventListener("click", () => {
+  const text = summary();
+  const fallback = () => {
+    const fb = document.getElementById("copy-fallback");
+    fb.hidden = false; fb.value = text; fb.focus(); fb.select();
+    copied.textContent = "Selected below: press Ctrl+C to copy";
+  };
+  try {
+    navigator.clipboard.writeText(text).then(
+      () => { copied.textContent = "Copied"; setTimeout(() => (copied.textContent = ""), 2500); },
+      fallback,
+    );
+  } catch (e) { fallback(); }
+});
+const confirmBox = document.getElementById("clear-confirm");
+document.getElementById("clear").addEventListener("click", () => { confirmBox.hidden = false; });
+document.getElementById("clear-no").addEventListener("click", () => { confirmBox.hidden = true; });
+document.getElementById("clear-yes").addEventListener("click", () => {
+  state = { marks: Object.assign({}, DECIDED), notes: {}, own: "" }; save();
+  document.querySelectorAll(".choice input").forEach((r) => {
+    const id = r.name.slice(2);
+    r.checked = state.marks[id] === r.value;
+  });
+  document.querySelectorAll(".note input").forEach((n) => (n.value = ""));
+  own.value = ""; confirmBox.hidden = true; tally();
+});
+</script>
