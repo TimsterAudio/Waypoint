@@ -109,7 +109,11 @@ pub fn ui(ui: &mut Ui, trip: &Trip, actions: &mut Vec<Action>) {
     ];
     ui::stats(ui, &stats);
 
-    let warnings = checks::check(trip, today);
+    let warnings = checks::open(trip, today);
+    let marked: Vec<checks::Warning> = checks::check(trip, today)
+        .into_iter()
+        .filter(|w| trip.dismissed.contains(&w.key))
+        .collect();
     ui::split_with(
         ui,
         0.55,
@@ -121,7 +125,11 @@ pub fn ui(ui: &mut Ui, trip: &Trip, actions: &mut Vec<Action>) {
                 if warnings.is_empty() {
                     ui::muted(
                         ui,
-                        "Nothing. Every night has somewhere to stay and nothing is falling due.",
+                        if marked.is_empty() {
+                            "Nothing. Every night has somewhere to stay and nothing is falling due."
+                        } else {
+                            "Nothing else."
+                        },
                     );
                 }
                 for w in &warnings {
@@ -131,6 +139,18 @@ pub fn ui(ui: &mut Ui, trip: &Trip, actions: &mut Vec<Action>) {
                     };
                     let r = ui.horizontal(|ui| {
                         ui::kind_mark(ui, color);
+                        let ok = ui.allocate_ui_with_layout(
+                            egui::vec2(36.0, 20.0),
+                            egui::Layout::right_to_left(egui::Align::Center),
+                            |ui| {
+                                ui::link(ui, "OK").on_hover_text(
+                                    "Mark as OK: it's fine as it is, so stop showing it",
+                                )
+                            },
+                        );
+                        if ok.inner.clicked() {
+                            actions.push(Action::MarkOk(w.key.clone()));
+                        }
                         ui.add(
                             egui::Label::new(
                                 egui::RichText::new(&w.text)
@@ -150,6 +170,41 @@ pub fn ui(ui: &mut Ui, trip: &Trip, actions: &mut Vec<Action>) {
                         }
                         if let Some(d) = w.day {
                             actions.push(Action::Day(d));
+                        }
+                    }
+                }
+                if !marked.is_empty() {
+                    let id = egui::Id::new("show-marked-ok");
+                    let mut show = ui.data(|d| d.get_temp::<bool>(id)).unwrap_or(false);
+                    let n = marked.len();
+                    let label = match (show, n) {
+                        (false, 1) => "1 marked OK: show".to_string(),
+                        (false, n) => format!("{n} marked OK: show"),
+                        (true, _) => "Hide the ones marked OK".to_string(),
+                    };
+                    if ui::link(ui, &label).clicked() {
+                        show = !show;
+                        ui.data_mut(|d| d.insert_temp(id, show));
+                    }
+                    if show {
+                        for w in &marked {
+                            ui.horizontal(|ui| {
+                                ui::kind_mark(ui, theme::alpha(p.ink2, 0.4));
+                                if ui::link(ui, "Undo")
+                                    .on_hover_text("Show this again")
+                                    .clicked()
+                                {
+                                    actions.push(Action::UnmarkOk(w.key.clone()));
+                                }
+                                ui.add(
+                                    egui::Label::new(
+                                        egui::RichText::new(&w.text)
+                                            .font(theme::body(14.0))
+                                            .color(p.ink2),
+                                    )
+                                    .wrap(),
+                                );
+                            });
                         }
                     }
                 }

@@ -79,6 +79,10 @@ pub enum Action {
     ShowPhonePage,
     /// Write the itinerary to share and open it in the browser.
     ShowSharePage,
+    /// Stop showing a thing to look at (by its key).
+    MarkOk(String),
+    /// Show it again.
+    UnmarkOk(String),
     /// Save the itinerary as a PDF: everything, or the version to share.
     SavePdf {
         shared: bool,
@@ -376,6 +380,17 @@ impl WaypointApp {
                 }
             }
             Action::SavePdf { shared } => self.save_pdf(shared, ctx),
+            Action::MarkOk(key) | Action::UnmarkOk(key) if self.doc.is_some() => {
+                let doc = self.doc.as_mut().expect("checked above");
+                let before = doc.trip.clone();
+                if doc.trip.dismissed.contains(&key) {
+                    doc.trip.dismissed.retain(|k| *k != key);
+                } else {
+                    doc.trip.dismissed.push(key);
+                }
+                doc.edited(&before);
+            }
+            Action::MarkOk(_) | Action::UnmarkOk(_) => {}
             Action::ShowSharePage => {
                 let Some(doc) = &mut self.doc else { return };
                 if let Some(p) = doc.write_share_page() {
@@ -426,7 +441,7 @@ impl WaypointApp {
             .doc
             .as_ref()
             .map(|d| {
-                waypoint_core::checks::check(&d.trip, today())
+                waypoint_core::checks::open(&d.trip, today())
                     .iter()
                     .filter(|w| w.severity == waypoint_core::checks::Severity::Act)
                     .count()

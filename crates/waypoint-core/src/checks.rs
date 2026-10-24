@@ -20,6 +20,9 @@ pub enum Severity {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Warning {
+    /// Stays the same while the thing it's about does, so it can be
+    /// marked OK: "noref:<item>", "nostay:<day>".
+    pub key: String,
     pub severity: Severity,
     pub text: String,
     /// The day it's about, for jumping to the itinerary.
@@ -28,8 +31,15 @@ pub struct Warning {
     pub items: Vec<String>,
 }
 
-fn w(severity: Severity, text: String, day: Option<Date>, items: Vec<String>) -> Warning {
+fn w(
+    key: String,
+    severity: Severity,
+    text: String,
+    day: Option<Date>,
+    items: Vec<String>,
+) -> Warning {
     Warning {
+        key,
         severity,
         text,
         day,
@@ -46,7 +56,14 @@ fn days_until(today: Date, d: Date) -> i32 {
     today.until(d).map(|s| s.get_days()).unwrap_or(0)
 }
 
-/// Every warning for the trip, the most pressing first.
+/// The warnings not marked OK, the most pressing first.
+pub fn open(trip: &Trip, today: Date) -> Vec<Warning> {
+    let mut v = check(trip, today);
+    v.retain(|w| !trip.dismissed.contains(&w.key));
+    v
+}
+
+/// Every warning for the trip, marked OK or not, the most pressing first.
 pub fn check(trip: &Trip, today: Date) -> Vec<Warning> {
     let mut out = Vec::new();
     nights(trip, &mut out);
@@ -78,7 +95,13 @@ fn nights(trip: &Trip, out: &mut Vec<Warning>) {
                 day_label(*missing.last().unwrap())
             )
         };
-        out.push(w(Severity::Act, text, Some(missing[0]), Vec::new()));
+        out.push(w(
+            format!("nostay:{}", missing[0]),
+            Severity::Act,
+            text,
+            Some(missing[0]),
+            Vec::new(),
+        ));
         missing.clear();
     };
     let mut d = start;
@@ -95,6 +118,7 @@ fn nights(trip: &Trip, out: &mut Vec<Warning>) {
             flush(&mut missing, out);
             if booked.is_empty() && !on_the_move {
                 out.push(w(
+                    format!("ideasonly:{d}"),
                     Severity::Check,
                     format!(
                         "Only ideas for the night of {}: {}",
@@ -110,6 +134,7 @@ fn nights(trip: &Trip, out: &mut Vec<Warning>) {
                 ));
             } else if booked.len() > 1 {
                 out.push(w(
+                    format!("twostays:{d}"),
                     Severity::Check,
                     format!(
                         "Two places booked for the night of {}: {}",
@@ -161,6 +186,7 @@ fn clashes(trip: &Trip, out: &mut Vec<Warning>) {
         for (b, sb) in timed.iter().skip(n + 1) {
             if sa.0 < sb.1 && sb.0 < sa.1 {
                 out.push(w(
+                    format!("clash:{}:{}", a.id, b.id),
                     Severity::Check,
                     format!(
                         "{} and {} overlap on {}",
@@ -193,6 +219,7 @@ fn money(trip: &Trip, today: Date, out: &mut Vec<Warning>) {
                         n => format!("due in {n} days, {}", day_label(due)),
                     };
                     out.push(w(
+                        format!("due:{}", i.id),
                         Severity::Act,
                         format!(
                             "{} to pay for {}, {when}",
@@ -214,6 +241,7 @@ fn money(trip: &Trip, today: Date, out: &mut Vec<Warning>) {
                     n => format!("in {n} days, {}", day_label(by)),
                 };
                 out.push(w(
+                    format!("cancelby:{}", i.id),
                     Severity::Act,
                     format!("Free cancellation for {} ends {when}", i.display_title()),
                     i.date(),
@@ -228,12 +256,27 @@ fn money(trip: &Trip, today: Date, out: &mut Vec<Warning>) {
         });
         if needs && !trip.rates.get(&code).is_some_and(|r| r.home_per_unit > 0.0) {
             out.push(w(
+                format!("norate:{code}"),
                 Severity::Act,
                 format!("No exchange rate for {code} yet, so those costs aren't in the totals"),
                 None,
                 Vec::new(),
             ));
         }
+    }
+}
+
+/// Whether a booking would normally come with a reference: stays and
+/// journeys, except a drive in your own car, and a stay with no cost and
+/// nobody it's booked with (with family or friends).
+fn needs_reference(i: &Item) -> bool {
+    match i.kind {
+        Kind::Travel => !i
+            .travel
+            .as_ref()
+            .is_some_and(|t| t.mode == crate::model::Mode::OwnCar),
+        Kind::Stay => !(i.cost.is_empty() && i.provider.trim().is_empty()),
+        _ => false,
     }
 }
 
@@ -249,6 +292,7 @@ fn details(trip: &Trip, out: &mut Vec<Warning>) {
                     .is_some_and(|p| p.how == crate::zones::How::Ambiguous)
             {
                 out.push(self::w(
+                    format!("zone:{}:{what}", i.id),
                     Severity::Check,
                     format!(
                         "Set a time zone for the {what} of {}: on {} that time comes both before and after crossing time zones",
@@ -263,8 +307,9 @@ fn details(trip: &Trip, out: &mut Vec<Warning>) {
         if !i.status.committed() {
             continue;
         }
-        if i.reference.trim().is_empty() && matches!(i.kind, Kind::Stay | Kind::Travel) {
+        if i.reference.trim().is_empty() && needs_reference(i) {
             out.push(w(
+                format!("noref:{}", i.id),
                 Severity::Check,
                 format!("{} has no booking reference", i.display_title()),
                 i.date(),
@@ -273,6 +318,7 @@ fn details(trip: &Trip, out: &mut Vec<Warning>) {
         }
         if i.start.is_none() {
             out.push(w(
+                format!("nodate:{}", i.id),
                 Severity::Check,
                 format!(
                     "{} is {} but has no date",
@@ -286,6 +332,7 @@ fn details(trip: &Trip, out: &mut Vec<Warning>) {
         if let (Some(d), Some(s), Some(e)) = (i.date(), trip.start, trip.end) {
             if d < s || d > e {
                 out.push(w(
+                    format!("outside:{}", i.id),
                     Severity::Check,
                     format!(
                         "{} is on {}, outside the trip's dates",
@@ -370,6 +417,40 @@ mod tests {
             "{:?}",
             check(&t, date(2027, 1, 1))
         );
+    }
+
+    #[test]
+    fn no_reference_needed_for_own_car_or_a_free_stay() {
+        let mut t = trip();
+        t.start = None;
+        let mut drive = Item::new(Kind::Travel);
+        drive.title = "Drive to the airport".into();
+        drive.status = Status::Confirmed;
+        drive.start = Some(When::day(date(2027, 5, 1)));
+        drive.travel.as_mut().unwrap().mode = crate::model::Mode::OwnCar;
+        t.items.push(drive);
+        let mut family = stay(date(2027, 5, 1), date(2027, 5, 2), Status::Confirmed);
+        family.reference.clear();
+        t.items.push(family);
+        assert!(check(&t, date(2027, 1, 1)).is_empty());
+        // A paid hotel still needs one.
+        t.items[1].cost.amount = 200.0;
+        let w = check(&t, date(2027, 1, 1));
+        assert_eq!(w.len(), 1);
+        assert_eq!(w[0].key, format!("noref:{}", t.items[1].id));
+    }
+
+    #[test]
+    fn marked_ok_stops_showing() {
+        let mut t = trip();
+        t.items
+            .push(stay(date(2027, 5, 1), date(2027, 5, 3), Status::Booked));
+        t.items
+            .push(stay(date(2027, 5, 4), date(2027, 5, 6), Status::Booked));
+        assert_eq!(open(&t, date(2027, 1, 1)).len(), 1);
+        t.dismissed.push("nostay:2027-05-03".into());
+        assert!(open(&t, date(2027, 1, 1)).is_empty());
+        assert_eq!(check(&t, date(2027, 1, 1)).len(), 1);
     }
 
     #[test]

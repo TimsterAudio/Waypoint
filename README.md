@@ -30,6 +30,7 @@ Waypoint doesn't sign in to Google itself; it saves to a folder that Google Driv
 ## Screens
 
 - **Overview**: how long until you go, what's booked, paid and still to pay against your budget, and what needs a look: nights with nowhere to stay, two places booked for one night, bookings that overlap, balances falling due in the next two weeks, free cancellation ending in the next week, booked travel and stays with no reference.
+- Anything under To look at that's fine as it is (a drive with no booking reference, say) can be marked **OK** so it stops showing; marked ones can be shown again and undone.
 - **Itinerary**: each day in time order, with "Tonight:" showing where you sleep. **+ Add** on a day adds a stay, travel, activity, meal or anything else on that day.
 - **Bookings**: every item in one table, filtered by kind and status, or searched by name, place or reference.
 - **Costs**: totals, the budget, cost by kind, what's still owing and when, and the exchange rates.

@@ -371,6 +371,7 @@ impl Editor {
                 Mode::Flight => ("Airline", "Flight number"),
                 Mode::Train => ("Train", "Train number"),
                 Mode::Car => ("Hire firm", "Car / class"),
+                Mode::OwnCar => ("Car", "Number plate"),
                 _ => ("Company", "Number"),
             };
             let flight = t.mode == Mode::Flight;

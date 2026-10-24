@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- **Mark things to look at as OK** (issues 9 and 11): each line under To look at has an OK link that stops it showing; "marked OK: show" lists them again, with Undo. The marks are saved in the trip, so they carry to the other computer.
+- **No booking reference asked for** a drive in your own car, or a stay with no cost and nobody it's booked with (with family or friends) (issue 11).
+- **Car**, for your own car, is a new way to travel, separate from Car hire (issue 8). A trip that uses it needs this version of Waypoint or later on every computer that opens it. A later version's new ways to travel read as Other here instead of stopping the trip opening.
+
 - **Places as you type** (roadmap B3): with "Suggest places" switched on in Settings, typing a hotel, restaurant or place name lists matching places from OpenStreetMap (through Photon, free and with no account). Picking one fills in the name and address, and the time zone where the booking has none (from the nearest town). Off until switched on; nothing goes online otherwise.
 - **Save PDF** (E3): the itinerary as a PDF made by Waypoint itself, either everything or the version to share, from the Itinerary (Save PDF) or Trip details. A4, in the app's fonts.
 

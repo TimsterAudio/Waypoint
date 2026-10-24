@@ -32,6 +32,9 @@ pub struct Trip {
     pub rates: BTreeMap<String, Rate>,
     pub items: Vec<Item>,
     pub notes: String,
+    /// Things to look at that have been marked OK (their keys), so they
+    /// stop showing.
+    pub dismissed: Vec<String>,
     #[serde(flatten)]
     pub extra: serde_json::Map<String, serde_json::Value>,
 }
@@ -50,6 +53,7 @@ impl Default for Trip {
             rates: BTreeMap::new(),
             items: Vec::new(),
             notes: String::new(),
+            dismissed: Vec::new(),
             extra: Default::default(),
         }
     }
@@ -147,17 +151,23 @@ pub enum Mode {
     Train,
     Bus,
     Ferry,
+    /// Your own car (or a lift): no booking needed.
+    OwnCar,
+    /// A hire car.
     Car,
     Transfer,
+    /// Also what a later version's new mode reads as here.
+    #[serde(other)]
     Other,
 }
 
 impl Mode {
-    pub const ALL: [Mode; 7] = [
+    pub const ALL: [Mode; 8] = [
         Mode::Flight,
         Mode::Train,
         Mode::Bus,
         Mode::Ferry,
+        Mode::OwnCar,
         Mode::Car,
         Mode::Transfer,
         Mode::Other,
@@ -169,6 +179,7 @@ impl Mode {
             Mode::Train => "Train",
             Mode::Bus => "Bus",
             Mode::Ferry => "Ferry",
+            Mode::OwnCar => "Car",
             Mode::Car => "Car hire",
             Mode::Transfer => "Transfer",
             Mode::Other => "Other",
@@ -517,6 +528,16 @@ mod tests {
         let back = serde_json::to_value(&t).unwrap();
         assert_eq!(back["futureThing"]["a"], 1);
         assert_eq!(back["items"][0]["later"], true);
+    }
+
+    #[test]
+    fn modes_read_and_unknown_ones_are_other() {
+        let t: Travel = serde_json::from_str(r#"{"mode":"owncar"}"#).unwrap();
+        assert_eq!(t.mode, Mode::OwnCar);
+        let t: Travel = serde_json::from_str(r#"{"mode":"car"}"#).unwrap();
+        assert_eq!(t.mode, Mode::Car);
+        let t: Travel = serde_json::from_str(r#"{"mode":"hovercraft"}"#).unwrap();
+        assert_eq!(t.mode, Mode::Other);
     }
 
     #[test]
