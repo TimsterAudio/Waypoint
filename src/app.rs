@@ -79,6 +79,10 @@ pub enum Action {
     ShowPhonePage,
     /// Write the itinerary to share and open it in the browser.
     ShowSharePage,
+    /// Save the itinerary as a PDF: everything, or the version to share.
+    SavePdf {
+        shared: bool,
+    },
 }
 
 pub struct WaypointApp {
@@ -246,6 +250,52 @@ impl WaypointApp {
         }
     }
 
+    /// Ask where to save a PDF of the itinerary, write it, and open it.
+    fn save_pdf(&mut self, shared: bool, ctx: &egui::Context) {
+        let Some(doc) = &mut self.doc else { return };
+        let stem = doc.trip.name.replace(" (sample)", "");
+        let name = if shared {
+            format!("{stem} (to share).pdf")
+        } else {
+            format!("{stem}.pdf")
+        };
+        let mut dialog = rfd::FileDialog::new()
+            .set_title(if shared {
+                "Save the itinerary to share as a PDF"
+            } else {
+                "Save the itinerary as a PDF"
+            })
+            .set_file_name(name)
+            .add_filter("PDF", &["pdf"]);
+        if let Some(dir) = doc.file.as_ref().and_then(|f| f.path.parent()) {
+            dialog = dialog.set_directory(dir);
+        }
+        let Some(mut path) = dialog.save_file() else {
+            return;
+        };
+        if path
+            .extension()
+            .is_none_or(|e| !e.eq_ignore_ascii_case("pdf"))
+        {
+            path.set_extension("pdf");
+        }
+        let result =
+            waypoint_core::pdf::render(&doc.trip, &jiff::Zoned::now(), shared).and_then(|bytes| {
+                waypoint_core::file::write_atomic(&path, &bytes).map_err(|e| e.to_string())
+            });
+        match result {
+            Ok(()) => {
+                ctx.open_url(egui::OpenUrl::new_tab(file_url(&path)));
+                let name = path
+                    .file_name()
+                    .and_then(|n| n.to_str())
+                    .unwrap_or("the PDF");
+                doc.toast(format!("Saved \"{name}\""));
+            }
+            Err(e) => doc.toast(format!("Couldn't save the PDF: {e}")),
+        }
+    }
+
     fn fetch_rates(&mut self, ctx: &egui::Context) {
         let Some(doc) = &self.doc else { return };
         let wanted = doc.trip.foreign_currencies();
@@ -325,6 +375,7 @@ impl WaypointApp {
                     None => {}
                 }
             }
+            Action::SavePdf { shared } => self.save_pdf(shared, ctx),
             Action::ShowSharePage => {
                 let Some(doc) = &mut self.doc else { return };
                 if let Some(p) = doc.write_share_page() {
@@ -623,14 +674,16 @@ impl eframe::App for WaypointApp {
                     egui::ScrollArea::vertical()
                         .id_salt("editor-scroll")
                         .auto_shrink([false, false])
-                        .show(ui, |ui| match self.editor.ui(ui, doc, &id) {
-                            views::editor::Outcome::None => {}
-                            views::editor::Outcome::Close => close = true,
-                            views::editor::Outcome::Deleted => {
-                                close = true;
-                            }
-                            views::editor::Outcome::Duplicated(new_id) => {
-                                actions.push(Action::Open(new_id));
+                        .show(ui, |ui| {
+                            match self.editor.ui(ui, doc, &id, self.settings.places_online) {
+                                views::editor::Outcome::None => {}
+                                views::editor::Outcome::Close => close = true,
+                                views::editor::Outcome::Deleted => {
+                                    close = true;
+                                }
+                                views::editor::Outcome::Duplicated(new_id) => {
+                                    actions.push(Action::Open(new_id));
+                                }
                             }
                         });
                 });

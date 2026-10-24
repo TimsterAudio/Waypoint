@@ -63,6 +63,24 @@ pub fn ui(ui: &mut Ui, s: &mut Settings) -> bool {
         );
     });
     ui::panel(ui, |ui| {
+        ui::h2(ui, "Places as you type");
+        changed |= ui
+            .checkbox(
+                &mut s.places_online,
+                "Suggest places while typing a hotel, restaurant or place name",
+            )
+            .changed();
+        ui::para(
+            ui,
+            "Suggestions come from Photon, a free search over OpenStreetMap that needs no \
+             account. Picking one fills in the name and address, and the time zone if the \
+             booking has none. Waypoint only goes online for this while it's on.",
+            theme::body(14.0),
+            p.ink2,
+            620.0,
+        );
+    });
+    ui::panel(ui, |ui| {
         ui::h2(ui, "About");
         ui::muted(ui, format!("Waypoint {}", env!("CARGO_PKG_VERSION")));
         ui::muted(

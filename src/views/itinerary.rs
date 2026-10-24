@@ -244,6 +244,18 @@ impl Itinerary {
                 {
                     actions.push(Action::ShowSharePage);
                 }
+                let pdf = ui::button(ui, "Save PDF", ui::Btn::Secondary).on_hover_text(
+                    "Save the itinerary as a PDF, everything or the version to share",
+                );
+                egui::Popup::menu(&pdf).show(|ui| {
+                    ui.set_min_width(220.0);
+                    if ui.button("My itinerary, everything").clicked() {
+                        actions.push(Action::SavePdf { shared: false });
+                    }
+                    if ui.button("The itinerary to share").clicked() {
+                        actions.push(Action::SavePdf { shared: true });
+                    }
+                });
             });
         });
         let days = trip.days();

@@ -32,6 +32,8 @@ pub struct City {
     pub province: &'static str,
     pub population: u64,
     pub tz: &'static str,
+    pub lat: f64,
+    pub lon: f64,
 }
 
 fn rows(text: &'static str) -> impl Iterator<Item = Vec<&'static str>> {
@@ -60,7 +62,7 @@ fn cities() -> &'static [City] {
     static LIST: OnceLock<Vec<City>> = OnceLock::new();
     LIST.get_or_init(|| {
         rows(CITIES)
-            .filter(|r| r.len() >= 7)
+            .filter(|r| r.len() >= 9)
             .map(|r| City {
                 name: r[0],
                 ascii: r[1],
@@ -69,6 +71,8 @@ fn cities() -> &'static [City] {
                 province: r[4],
                 population: r[5].parse().unwrap_or(0),
                 tz: r[6],
+                lat: r[7].parse().unwrap_or(0.0),
+                lon: r[8].parse().unwrap_or(0.0),
             })
             .collect()
     })
@@ -251,6 +255,20 @@ pub fn zone_for(text: &str) -> Option<&'static str> {
         .map(|a| a.tz)
 }
 
+/// The town nearest a point on the map, for its time zone. Near a border
+/// it can be the town across it, so it's a good guess, not a certainty.
+pub fn nearest_city(lat: f64, lon: f64) -> Option<&'static City> {
+    // Distance on a sphere (haversine), in radians; no need for kilometres.
+    let rad = |d: f64| d.to_radians();
+    let dist = |c: &City| {
+        let (dlat, dlon) = (rad(c.lat - lat), rad(c.lon - lon));
+        let a = (dlat / 2.0).sin().powi(2)
+            + rad(lat).cos() * rad(c.lat).cos() * (dlon / 2.0).sin().powi(2);
+        a.sqrt().asin()
+    };
+    cities().iter().min_by(|a, b| dist(a).total_cmp(&dist(b)))
+}
+
 /// A tidier name for a bare airport code: "MEL" becomes "Melbourne (MEL)".
 /// Anything else is left as it is.
 pub fn tidy_airport(text: &str) -> Option<String> {
@@ -296,6 +314,19 @@ mod tests {
         assert_eq!(zone_for("Los Angeles"), Some("America/Los_Angeles"));
         assert_eq!(zone_for("Nowhere-on-Sea"), None);
         assert_eq!(zone_for(""), None);
+    }
+
+    #[test]
+    fn nearest_towns() {
+        // Tullamarine, by Melbourne airport.
+        assert_eq!(
+            nearest_city(-37.70, 144.88).unwrap().tz,
+            "Australia/Melbourne"
+        );
+        // Addison, Texas.
+        assert_eq!(nearest_city(32.96, -96.83).unwrap().tz, "America/Chicago");
+        // Higashiyama, Kyoto.
+        assert_eq!(nearest_city(35.0, 135.78).unwrap().tz, "Asia/Tokyo");
     }
 
     #[test]

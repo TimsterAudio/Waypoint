@@ -5,7 +5,8 @@
 use jiff::civil::Date;
 
 use crate::checks::day_label;
-use crate::model::{Item, Kind, Status, Trip};
+use crate::details::{self, time_of, Tonight, Value};
+use crate::model::{Item, Status, Trip};
 
 fn esc(s: &str) -> String {
     let mut o = String::with_capacity(s.len());
@@ -35,12 +36,6 @@ fn url_enc(s: &str) -> String {
         }
     }
     o
-}
-
-fn time_of(w: &crate::model::When) -> String {
-    w.time
-        .map(|t| t.strftime("%H:%M").to_string())
-        .unwrap_or_default()
 }
 
 fn status_class(s: Status) -> &'static str {
@@ -99,43 +94,7 @@ pub fn render(trip: &Trip, now: jiff::Zoned) -> String {
 /// references, who it's booked with, contacts, seats, rooms, notes, ideas
 /// or cancellations. Prints well, for a PDF.
 pub fn render_shared(trip: &Trip, now: jiff::Zoned) -> String {
-    page(&shareable(trip), now, true)
-}
-
-/// A copy of the trip with the private details taken out, so nothing
-/// private can reach the shared page by mistake.
-fn shareable(trip: &Trip) -> Trip {
-    let mut t = Trip {
-        name: trip.name.clone(),
-        home_currency: trip.home_currency.clone(),
-        home_tz: trip.home_tz.clone(),
-        start: trip.start,
-        end: trip.end,
-        travellers: trip.travellers.clone(),
-        ..Default::default()
-    };
-    t.items = trip
-        .items
-        .iter()
-        .filter(|i| i.status.committed())
-        .map(|i| {
-            let mut i = i.clone();
-            i.cost = Default::default();
-            i.reference.clear();
-            i.provider.clear();
-            i.contact.clear();
-            i.email.clear();
-            i.room.clear();
-            i.notes.clear();
-            i.updated_by.clear();
-            i.extra.clear();
-            if let Some(tr) = &mut i.travel {
-                tr.seat.clear();
-            }
-            i
-        })
-        .collect();
-    t
+    page(&details::shareable(trip), now, true)
 }
 
 fn page(trip: &Trip, now: jiff::Zoned, shared: bool) -> String {
@@ -249,23 +208,61 @@ fn day(h: &mut String, trip: &Trip, d: Date, today: bool, shared: bool) {
         item(h, trip, &tl, i, shared);
     }
     // Where you sleep tonight.
-    let last_night = trip.end.is_some_and(|e| d >= e);
-    let stays = trip.stays_for_night(d);
-    if !stays.is_empty() {
-        let names: Vec<String> = stays
-            .iter()
-            .map(|s| format!("<b>{}</b>", esc(&s.display_title())))
-            .collect();
-        h.push_str(&format!(
-            "<p class=\"stay\">Tonight: {}</p>",
-            names.join(" or ")
-        ));
-    } else if !last_night && !trip.travelling_overnight(d).is_empty() {
-        h.push_str("<p class=\"stay\">Tonight: travelling overnight</p>");
-    } else if !shared && !last_night && trip.start.is_some_and(|s| d >= s) {
-        h.push_str("<p class=\"stay none\">Tonight: nowhere booked yet</p>");
+    match details::tonight(trip, d) {
+        Tonight::Stays(names) => {
+            let names: Vec<String> = names.iter().map(|n| format!("<b>{}</b>", esc(n))).collect();
+            h.push_str(&format!(
+                "<p class=\"stay\">Tonight: {}</p>",
+                names.join(" or ")
+            ));
+        }
+        Tonight::Travelling => {
+            h.push_str("<p class=\"stay\">Tonight: travelling overnight</p>");
+        }
+        Tonight::Missing if !shared => {
+            h.push_str("<p class=\"stay none\">Tonight: nowhere booked yet</p>");
+        }
+        _ => {}
     }
     h.push_str("</section>");
+}
+
+/// A line of detail as HTML: addresses open Maps, phone numbers call.
+fn value_html(v: &Value) -> String {
+    match v {
+        Value::Text(s) => esc(s),
+        Value::Reference(s) => format!("<span class=\"ref\">{}</span>", esc(s)),
+        Value::Address(s) => format!(
+            "<a href=\"https://maps.apple.com/?q={}\">{}</a>",
+            url_enc(s),
+            esc(s)
+        ),
+        Value::Phone(s) => {
+            let dial: String = s
+                .chars()
+                .filter(|c| c.is_ascii_digit() || *c == '+')
+                .collect();
+            format!("<a href=\"tel:{dial}\">{}</a>", esc(s))
+        }
+        Value::Email(s) => format!("<a href=\"mailto:{0}\">{0}</a>", esc(s)),
+        Value::Website(s) => {
+            let href = if s.starts_with("http") {
+                s.clone()
+            } else {
+                format!("https://{s}")
+            };
+            format!("<a href=\"{}\">{}</a>", esc(&href), esc(s))
+        }
+        Value::Cost {
+            amount,
+            owing,
+            paid,
+        } => match (owing, paid) {
+            (Some(o), _) => format!("{} · <span class=\"owe\">{}</span>", esc(amount), esc(o)),
+            (None, true) => format!("{} · paid", esc(amount)),
+            (None, false) => esc(amount),
+        },
+    }
 }
 
 fn item(h: &mut String, trip: &Trip, tl: &crate::zones::Timeline, i: &Item, shared: bool) {
@@ -285,149 +282,10 @@ fn item(h: &mut String, trip: &Trip, tl: &crate::zones::Timeline, i: &Item, shar
         esc(&time),
         esc(&i.display_title()),
     ));
-    let mut rows: Vec<(&str, String)> = Vec::new();
-    match i.kind {
-        Kind::Stay => {
-            if let Some(s) = &i.start {
-                let t = time_of(s);
-                rows.push((
-                    "Check in",
-                    if t.is_empty() {
-                        day_label(s.date)
-                    } else {
-                        format!("{} from {t}", day_label(s.date))
-                    },
-                ));
-            }
-            if let Some(e) = &i.end {
-                let t = time_of(e);
-                rows.push((
-                    "Check out",
-                    if t.is_empty() {
-                        day_label(e.date)
-                    } else {
-                        format!("{} by {t}", day_label(e.date))
-                    },
-                ));
-            }
-            if !i.room.is_empty() {
-                rows.push(("Room", esc(&i.room)));
-            }
-        }
-        Kind::Travel => {
-            if let Some(t) = &i.travel {
-                let what = format!("{} {} {}", t.mode.label(), t.carrier, t.number);
-                rows.push(("", esc(what.trim())));
-                if !t.from.is_empty() {
-                    rows.push(("From", esc(&t.from)));
-                }
-                if !t.terminal.is_empty() {
-                    rows.push(("Terminal", esc(&t.terminal)));
-                }
-                if !t.to.is_empty() {
-                    rows.push(("To", esc(&t.to)));
-                }
-                if !t.seat.is_empty() {
-                    rows.push(("Seat", esc(&t.seat)));
-                }
-            }
-            if let Some(e) = &i.end {
-                let t = time_of(e);
-                let same_day = i.date() == Some(e.date);
-                let at = match (t.is_empty(), same_day) {
-                    (true, _) => day_label(e.date),
-                    (false, true) => t,
-                    (false, false) => format!("{t}, {}", day_label(e.date)),
-                };
-                let mut at = at;
-                if let Some(m) = tl.duration_minutes(i) {
-                    at.push_str(&format!(" ({}h {:02}m)", m / 60, m % 60));
-                }
-                rows.push(("Arrives", esc(&at)));
-            }
-        }
-        _ => {
-            if let Some(e) = &i.end {
-                let t = time_of(e);
-                if !t.is_empty() {
-                    rows.push(("Until", t));
-                }
-            }
-        }
-    }
-    if let Some(home) = tl.home_times(i) {
-        rows.push(("Home time", esc(&home)));
-    }
-    if !i.reference.is_empty() {
-        rows.push((
-            "Ref",
-            format!("<span class=\"ref\">{}</span>", esc(&i.reference)),
-        ));
-    }
-    if !i.provider.is_empty() {
-        rows.push(("With", esc(&i.provider)));
-    }
-    if !i.place.is_empty() && i.place != i.display_title() {
-        rows.push(("Place", esc(&i.place)));
-    }
-    if !i.address.is_empty() {
-        rows.push((
-            "Address",
-            format!(
-                "<a href=\"https://maps.apple.com/?q={}\">{}</a>",
-                url_enc(&i.address),
-                esc(&i.address)
-            ),
-        ));
-    }
-    if !i.contact.is_empty() {
-        rows.push(("Contact", esc(&i.contact)));
-    }
-    if !i.phone.is_empty() {
-        let dial: String = i
-            .phone
-            .chars()
-            .filter(|c| c.is_ascii_digit() || *c == '+')
-            .collect();
-        rows.push((
-            "Phone",
-            format!("<a href=\"tel:{dial}\">{}</a>", esc(&i.phone)),
-        ));
-    }
-    if !i.email.is_empty() {
-        rows.push((
-            "Email",
-            format!("<a href=\"mailto:{0}\">{0}</a>", esc(&i.email)),
-        ));
-    }
-    if !i.website.is_empty() {
-        let href = if i.website.starts_with("http") {
-            i.website.clone()
-        } else {
-            format!("https://{}", i.website)
-        };
-        rows.push((
-            "Web",
-            format!("<a href=\"{}\">{}</a>", esc(&href), esc(&i.website)),
-        ));
-    }
-    if !i.cost.is_empty() {
-        let code = trip.currency_of(i);
-        let mut s = crate::money::format(i.cost.amount, &code);
-        if i.cost.owing() > 0.0 && i.status != Status::Cancelled {
-            s.push_str(&format!(
-                " · <span class=\"owe\">{} to pay{}</span>",
-                crate::money::format(i.cost.owing(), &code),
-                i.cost
-                    .due
-                    .map(|d| format!(" by {}", day_label(d)))
-                    .unwrap_or_default()
-            ));
-        } else if i.cost.paid > 0.0 {
-            s.push_str(" · paid");
-        }
-        rows.push(("Cost", s));
-    }
+    let rows: Vec<(&str, String)> = details::rows(trip, tl, i)
+        .into_iter()
+        .map(|r| (r.label, value_html(&r.value)))
+        .collect();
     if !rows.is_empty() {
         h.push_str("<dl>");
         for (k, v) in rows {

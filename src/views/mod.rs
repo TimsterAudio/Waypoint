@@ -5,4 +5,5 @@ pub mod itinerary;
 pub mod overview;
 pub mod settings;
 pub mod start;
+pub mod suggest;
 pub mod trip;

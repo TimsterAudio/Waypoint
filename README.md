@@ -57,6 +57,14 @@ One page, named after the trip, written beside the trip file each time it saves 
 
 <br clear="right">
 
+## Places as you type
+
+Switch on **Suggest places** in Settings and, as you type a hotel, restaurant or sight's name, Waypoint lists matching places from [OpenStreetMap](https://www.openstreetmap.org) (searched through [Photon](https://photon.komoot.io)). Picking one fills in the name and address, and the time zone if the booking has none. It's off until you switch it on.
+
+## PDFs
+
+**Save PDF** on the Itinerary (or Trip details) makes a PDF of the itinerary, either everything or the version to share below, without going through a browser.
+
 ## An itinerary to share
 
 **Itinerary to share** (on the Itinerary and Trip details screens) writes `Japan 2027 (to share).html` beside the trip and opens it in your browser: every booked flight, train, stay and activity with times, addresses, phone numbers and home times, and nothing private (no costs, booking references, who it's booked with, contacts, seats, rooms, notes, ideas or cancellations). Send it as it is, or print it from the browser and choose **Save as PDF**.

@@ -71,9 +71,9 @@ rows = []
 for c in cities:
     tz = canon(clean(c.get("timezone")))
     if "/" not in tz: continue
-    rows.append((clean(c["city"]), clean(c.get("city_ascii")), clean(c.get("country")), clean(c.get("iso2")), clean(c.get("province")), str(int(c.get("pop") or 0)), tz))
+    rows.append((clean(c["city"]), clean(c.get("city_ascii")), clean(c.get("country")), clean(c.get("iso2")), clean(c.get("province")), str(int(c.get("pop") or 0)), tz, f"{float(c['lat']):.3f}", f"{float(c['lng']):.3f}"))
 rows.sort(key=lambda r: (r[0].lower(), -int(r[5])))
 with open(f"{out}/cities.tsv", "w", encoding="utf-8") as f:
-    f.write("# Natural Earth populated places (public domain) via city-timezones 1.3.1 (MIT): city, ascii name, country, country code, province, population, time zone\n")
+    f.write("# Natural Earth populated places (public domain) via city-timezones 1.3.1 (MIT): city, ascii name, country, country code, province, population, time zone, latitude, longitude\n")
     for r in rows: f.write("\t".join(r) + "\n")
 print(len(air), "airports;", len(lines), "airlines;", len(rows), "cities")

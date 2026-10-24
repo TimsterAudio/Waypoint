@@ -2,10 +2,13 @@
 //! checks, trip files, exchange rates and the phone itinerary.
 
 pub mod checks;
+pub mod details;
 pub mod file;
 pub mod html;
+pub mod lookup;
 pub mod model;
 pub mod money;
+pub mod pdf;
 pub mod places;
 pub mod rates;
 pub mod sample;

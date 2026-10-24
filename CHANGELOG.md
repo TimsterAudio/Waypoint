@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- **Places as you type** (roadmap B3): with "Suggest places" switched on in Settings, typing a hotel, restaurant or place name lists matching places from OpenStreetMap (through Photon, free and with no account). Picking one fills in the name and address, and the time zone where the booking has none (from the nearest town). Off until switched on; nothing goes online otherwise.
+- **Save PDF** (E3): the itinerary as a PDF made by Waypoint itself, either everything or the version to share, from the Itinerary (Save PDF) or Trip details. A4, in the app's fonts.
+
 - **Time zones from places** (roadmap B1): a journey with no time zone set takes one from where it leaves and arrives, using lists built into Waypoint (about 5,500 airports and 7,300 towns), so "Melbourne", "MEL", "Houston (IAH)" or "Kyoto" are enough. The editor shows the zone each place gives, and the time zone box says "(from the place)". A zone you set yourself always wins. Typing an airport code in From or To becomes "Melbourne (MEL)" when you leave the box.
 - **Flight lengths** use the zones of both ends, worked out or set, so Melbourne 08:15 to Auckland 13:55 is 3h 40m, not 5h 40m (issue 10).
 - **Home times** more than a day apart carry their dates ("Fri 13 Nov 12:00 to Fri 20 Nov 03:00").

@@ -8,4 +8,5 @@ description = "Trip files, costs, checks and the phone itinerary for Waypoint"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 jiff = { version = "0.2", features = ["serde"] }
+genpdf = "0.2"
 reqwest = { version = "0.12", default-features = false, features = ["blocking", "rustls-tls"] }

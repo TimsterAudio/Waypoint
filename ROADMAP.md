@@ -23,7 +23,7 @@ Status: `[ ]` open, `[x]` done, `[-]` dropped, `[~]` later.
 ## B. Typing less
 - [x] **B1** Time zones filled in from where a journey leaves and arrives: type "MEL", "LAX" or "Auckland" in From and To and both zones are set. Airports from OpenFlights' list; stations, ports and towns from GeoNames' list of towns over 15,000 people (about 2 MB). A zone set by hand is never overwritten. *Offline, Asked* — **Yes**, done 2026-10-24
 - [x] **B2** Airline names from their codes: "NZ" becomes Air New Zealand (OpenFlights' airline list). *Offline* — **Yes**, done 2026-10-24
-- [ ] **B3** Places as you type: hotels and attractions with their address while typing a name, from Photon (OpenStreetMap data; free, no key, allows search as you type). A place picked this way could set its time zone too. *Online, Asked* — **Yes**
+- [x] **B3** Places as you type: hotels and attractions with their address while typing a name, from Photon (OpenStreetMap data; free, no key, allows search as you type). A place picked this way could set its time zone too. *Online, Asked* — **Yes**, done 2026-10-24
 - [x] **B4** Quicker dates: picking a day closes the calendar straight away (or on a double-click) instead of needing Save, and dates can be typed ("14/5"). *Offline, Asked* — **Yes**, done 2026-10-24
 
 ## C. Flights
@@ -41,7 +41,7 @@ Status: `[ ]` open, `[x]` done, `[-]` dropped, `[~]` later.
 ## E. Sharing and printing
 - [ ] **E1** Calendar export: an `.ics` file beside the trip so bookings show in the phone's calendar. *Offline*
 - [ ] **E2** Attachments: link tickets and confirmation PDFs (kept in the same Drive folder) to an item, and link them from the phone page. *Offline*
-- [ ] **E3** Save straight to PDF from Waypoint, without going through a browser. *Offline* — **Yes**
+- [x] **E3** Save straight to PDF from Waypoint, without going through a browser. *Offline* — **Yes**, done 2026-10-24
 - [ ] **E4** Choose notes to show on the itinerary to share (all notes are left off now). *Offline*
 
 ## F. Bigger features

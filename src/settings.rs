@@ -37,6 +37,9 @@ pub struct Settings {
     /// Fetch exchange rates when a trip opens. Off until switched on: no
     /// network unless asked.
     pub rates_on_open: bool,
+    /// Suggest places from OpenStreetMap while typing a name. Off until
+    /// switched on: no network unless asked.
+    pub places_online: bool,
 }
 
 impl Default for Settings {
@@ -46,6 +49,7 @@ impl Default for Settings {
             recent: Vec::new(),
             phone_page: true,
             rates_on_open: false,
+            places_online: false,
         }
     }
 }

@@ -5,6 +5,7 @@ use eframe::egui::{self, Ui};
 use jiff::civil::Date;
 use waypoint_core::{money, Kind, Mode, Status, Travel, When};
 
+use waypoint_core::lookup::Found;
 use waypoint_core::places;
 use waypoint_core::zones::{How, Placed};
 
@@ -12,12 +13,15 @@ use crate::app::today;
 use crate::doc::Doc;
 use crate::theme;
 use crate::ui::{self, Btn};
+use crate::views::suggest::{Field, Suggest};
 use crate::views::trip::currency_select;
 
 #[derive(Default)]
 pub struct Editor {
     /// Put the cursor in the title (a new item).
     pub focus_title: bool,
+    /// Places as you type.
+    suggest: Suggest,
 }
 
 pub enum Outcome {
@@ -140,6 +144,24 @@ fn opt_date(ui: &mut Ui, id: &str, label: &str, value: &mut Option<Date>, defaul
     });
 }
 
+/// Fill in what a picked place gives: its address, and its time zone where
+/// the booking has none.
+fn use_place(item: &mut waypoint_core::Item, found: &Found) {
+    if !found.address.is_empty() {
+        item.address = found.address.clone();
+    }
+    if let Some(tz) = found.tz {
+        for w in [item.start.as_mut(), item.end.as_mut()]
+            .into_iter()
+            .flatten()
+        {
+            if w.tz.trim().is_empty() {
+                w.tz = tz.to_string();
+            }
+        }
+    }
+}
+
 /// A labelled one-line field in a two-column form.
 fn line(ui: &mut Ui, label: &str, value: &mut String, hint: &str) -> egui::Response {
     ui.horizontal(|ui| {
@@ -214,7 +236,8 @@ fn section(ui: &mut Ui, title: &str) {
 }
 
 impl Editor {
-    pub fn ui(&mut self, ui: &mut Ui, doc: &mut Doc, id: &str) -> Outcome {
+    /// `online`: suggest places as the title or place is typed.
+    pub fn ui(&mut self, ui: &mut Ui, doc: &mut Doc, id: &str, online: bool) -> Outcome {
         // Nothing here may be wider than the panel: a long line would push
         // the labels off its left edge.
         ui.set_max_width(ui.available_width());
@@ -253,6 +276,17 @@ impl Editor {
         );
         if std::mem::take(&mut self.focus_title) {
             r.request_focus();
+        }
+        // Hotels, restaurants and sights are worth looking up; journeys
+        // aren't.
+        let look_up = online && item.kind != Kind::Travel;
+        if look_up {
+            self.suggest
+                .typed(id, Field::Title, &item.title, r.changed());
+            if let Some(found) = self.suggest.list(ui, id, Field::Title) {
+                item.title = found.name.clone();
+                use_place(&mut item, &found);
+            }
         }
 
         let kinds: Vec<&str> = Kind::ALL.iter().map(|k| k.label()).collect();
@@ -379,7 +413,16 @@ impl Editor {
         }
 
         section(ui, "Where");
-        line(ui, "Place", &mut item.place, "Name of the place");
+        let r = line(ui, "Place", &mut item.place, "Name of the place");
+        if online {
+            self.suggest
+                .typed(id, Field::Place, &item.place, r.changed());
+            if let Some(found) = self.suggest.list(ui, id, Field::Place) {
+                item.place = found.name.clone();
+                use_place(&mut item, &found);
+            }
+            self.suggest.tick(ui.ctx());
+        }
         line(ui, "Address", &mut item.address, "Street, town");
         if item.kind == Kind::Stay {
             line(ui, "Room", &mut item.room, "");

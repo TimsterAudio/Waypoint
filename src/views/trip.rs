@@ -167,6 +167,12 @@ pub fn ui(ui: &mut Ui, doc: &mut Doc, actions: &mut Vec<Action>) {
                     if ui::button(ui, "Itinerary to share", Btn::Secondary).clicked() {
                         actions.push(Action::ShowSharePage);
                     }
+                    if ui::button(ui, "Save PDF…", Btn::Secondary).clicked() {
+                        actions.push(Action::SavePdf { shared: false });
+                    }
+                    if ui::button(ui, "Save PDF to share…", Btn::Secondary).clicked() {
+                        actions.push(Action::SavePdf { shared: true });
+                    }
                     if ui::button(ui, "Save a copy as…", Btn::Secondary).clicked() {
                         actions.push(Action::SaveCopy);
                     }
