@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- **Who's going** takes names separated by commas again: a comma typed after a name was removed at once, so a second name couldn't be added.
+
 - **A planning stage** (roadmap F7): a trip is Planning or Booking (Trip details; the Overview shows "Planning"). While it's planning and nothing is booked, confirmed or paid, changing the first day moves the whole trip and every idea in it, keeping its length and times; payment dates stay put. Once something is booked, changing the dates moves nothing. New trips start in Planning; trips saved before this open as Booking.
 
 - **Mark things to look at as OK** (issues 9 and 11): each line under To look at has an OK link that stops it showing; "marked OK: show" lists them again, with Undo. The marks are saved in the trip, so they carry to the other computer.

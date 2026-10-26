@@ -162,8 +162,12 @@ pub fn ui(ui: &mut Ui, doc: &mut Doc, actions: &mut Vec<Action>) {
             "Who's going",
             Some("Names, separated by commas."),
             |ui| {
-                let mut s = trip.travellers.join(", ");
-                if ui::text_input(ui, &mut s, "Tim, Sam", 360.0).changed() {
+                // Keeps what's typed until the box is left, so a comma or
+                // space at the end isn't tidied away before the next name.
+                let shown = trip.travellers.join(", ");
+                let (_, typed) =
+                    ui::typed_input(ui, egui::Id::new("travellers"), shown, "Tim, Sam", 360.0);
+                if let Some(s) = typed {
                     trip.travellers = s
                         .split(',')
                         .map(|x| x.trim().to_string())
