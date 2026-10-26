@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- **A planning stage** (roadmap F7): a trip is Planning or Booking (Trip details; the Overview shows "Planning"). While it's planning and nothing is booked, confirmed or paid, changing the first day moves the whole trip and every idea in it, keeping its length and times; payment dates stay put. Once something is booked, changing the dates moves nothing. New trips start in Planning; trips saved before this open as Booking.
+
 - **Mark things to look at as OK** (issues 9 and 11): each line under To look at has an OK link that stops it showing; "marked OK: show" lists them again, with Undo. The marks are saved in the trip, so they carry to the other computer.
 - **No booking reference asked for** a drive in your own car, or a stay with no cost and nobody it's booked with (with family or friends) (issue 11).
 - **Car**, for your own car, is a new way to travel, separate from Car hire (issue 8). A trip that uses it needs this version of Waypoint or later on every computer that opens it. A later version's new ways to travel read as Other here instead of stopping the trip opening.

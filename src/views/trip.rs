@@ -43,6 +43,24 @@ pub fn ui(ui: &mut Ui, doc: &mut Doc, actions: &mut Vec<Action>) {
         ui::field(ui, "Name", None, |ui| {
             ui::text_input(ui, &mut trip.name, "Japan 2027", 360.0)
         });
+        let booked = trip.items.iter().filter(|i| i.status.committed()).count();
+        ui::field(
+            ui,
+            "Stage",
+            Some(match (trip.planning, booked) {
+                (true, 0) => "Still planning: changing the first day moves the whole trip and every idea in it, keeping the trip's length.",
+                (true, _) => "Still planning, but some things are booked, so changing the dates won't move anything. Move bookings one at a time.",
+                (false, _) => "Booking: changing the trip's dates doesn't move anything in it.",
+            }),
+            |ui| {
+                if let Some(k) = ui::chips(ui, &["Planning", "Booking"], Some(if trip.planning { 0 } else { 1 })) {
+                    trip.planning = k == 0;
+                }
+            },
+        );
+        let can_move = trip.can_move();
+        let end_before = trip.end;
+        let mut moved: Option<(jiff::civil::Date, jiff::civil::Date)> = None;
         ui::field(
             ui,
             "Dates",
@@ -61,7 +79,11 @@ pub fn ui(ui: &mut Ui, doc: &mut Doc, actions: &mut Vec<Action>) {
                         }
                     }
                     if let (Some(s), Some(e)) = (trip.start.as_mut(), trip.end.as_mut()) {
+                        let first = *s;
                         ui::date_input(ui, "trip-start", s);
+                        if *s != first && can_move {
+                            moved = Some((first, *s));
+                        }
                         ui::small(ui, "to", p.ink2);
                         ui::date_input(ui, "trip-end", e);
                         if *e < *s {
@@ -75,6 +97,13 @@ pub fn ui(ui: &mut Ui, doc: &mut Doc, actions: &mut Vec<Action>) {
                 });
             },
         );
+        // While planning with nothing booked, a new first day moves it all.
+        if let Some((from, to)) = moved {
+            let days = from.until(to).map(|x| x.get_days()).unwrap_or(0);
+            trip.start = Some(from);
+            trip.end = end_before;
+            trip.move_by(days);
+        }
         ui::field(
             ui,
             "Home currency",

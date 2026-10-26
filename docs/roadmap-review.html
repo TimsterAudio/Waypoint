@@ -226,7 +226,7 @@ textarea#own-notes:focus { outline: none; }
     <ol class="done-list" id="done-list"></ol>
   </section>
 
-  <p class="small muted">Waypoint 0.1.0 and later · updated 24 October 2026 (B1–B4 and E3 done)</p>
+  <p class="small muted">Waypoint 0.1.0 and later · updated 26 October 2026 (B1–B4, E3 and F7 done)</p>
 </div>
 
 <script>
@@ -268,6 +268,7 @@ const GROUPS = [
     ["F4", "Import from a spreadsheet", "Bring in a trip planned the old way, from a CSV.", "offline"],
     ["F5", "Merge two people's changes", "Item by item, instead of choosing one person's version.", "offline"],
     ["F6", "Copy a past trip", "Start a new trip from an old one.", "offline"],
+    ["F7", "A planning stage", "A trip is Planning or Booking. While planning with nothing booked, changing the first day moves the whole trip and its ideas with it.", "offline", true],
   ]},
   { code: "G", title: "Parked", blurb: "Need services Waypoint doesn't use yet.", items: [
     ["G1", "Maps", "Where each booking is, on a map (needs map tiles from the internet).", "online"],
@@ -281,7 +282,7 @@ const GROUPS = [
   ]},
 ];
 // Built and in the Latest build.
-const DONE = new Set(["B1", "B2", "B3", "B4", "E3", "Z1", "Z2", "Z3", "Z4"]);
+const DONE = new Set(["B1", "B2", "B3", "B4", "E3", "F7", "Z1", "Z2", "Z3", "Z4"]);
 // Decided already (ROADMAP.md); shown ticked until changed here.
 const DECIDED = { A1: "yes", A2: "yes", A3: "yes", B1: "yes", B2: "yes", B3: "yes", B4: "yes", E3: "yes" };
 const TAG = { offline: "Offline", online: "Online", paid: "Paid" };

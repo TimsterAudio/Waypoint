@@ -52,6 +52,11 @@ pub fn ui(ui: &mut Ui, trip: &Trip, actions: &mut Vec<Action>) {
         if let Some(c) = countdown(trip, today) {
             ui::text(ui, c, theme::display(22.0), p.trace);
         }
+        if trip.planning {
+            ui::chip(ui, "Planning", false).on_hover_text(
+                "This trip is still being planned. Change the stage in Trip details.",
+            );
+        }
         if sub.is_empty() {
             if ui::link(ui, "Set the trip's dates").clicked() {
                 actions.push(Action::Go(crate::app::Route::Trip));

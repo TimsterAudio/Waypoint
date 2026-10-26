@@ -34,7 +34,7 @@ Waypoint doesn't sign in to Google itself; it saves to a folder that Google Driv
 - **Itinerary**: each day in time order, with "Tonight:" showing where you sleep. **+ Add** on a day adds a stay, travel, activity, meal or anything else on that day.
 - **Bookings**: every item in one table, filtered by kind and status, or searched by name, place or reference.
 - **Costs**: totals, the budget, cost by kind, what's still owing and when, and the exchange rates.
-- **Trip details**: name, dates, home currency, budget, who's going, notes.
+- **Trip details**: the stage (Planning or Booking: while planning with nothing booked, moving the first day moves the whole trip), name, dates, home currency, budget, who's going, notes.
 
 **Time zones.** Journeys take their time zones from where they leave and arrive ("Melbourne", "MEL", "Houston (IAH)", "Kyoto"), from lists of airports and towns built into Waypoint; set a zone yourself only for a place it doesn't know. Everything else takes its zone from the journeys: at home before the first, then wherever each one lands. Items are shown in the order they really happen, flight lengths allow for the time difference, flights over the date line that cover two nights count for both, and bookings in another zone show the time at home too. If a time without a zone could be in two places (flying east over the date line repeats part of a day), Waypoint asks you to set one.
 

@@ -8,7 +8,7 @@ Status: `[ ]` open, `[x]` done, `[-]` dropped, `[~]` later.
 
 ## Decisions so far (2026-10-24)
 
-- **Yes:** A1, A2, A3, B1, B2, B3, B4, E3
+- **Yes:** A1, A2, A3, B1, B2, B3, B4, E3, F7
 - **Undecided:** C1, C2, C3, D1, D2, D3, D4, D5, E1, E2, E4, F1, F2, F3, F4, F5, F6, G1, G2
 
 ## Next, whatever is decided
@@ -51,6 +51,7 @@ Status: `[ ]` open, `[x]` done, `[-]` dropped, `[~]` later.
 - [ ] **F4** Import from a spreadsheet (CSV), for trips planned the old way. *Offline*
 - [ ] **F5** Merge two people's changes item by item instead of choosing one version. *Offline*
 - [ ] **F6** Copy a past trip as the start of a new one. *Offline*
+- [x] **F7** A planning stage: a trip is Planning or Booking, and while it's planning with nothing booked, changing the first day moves the whole trip and its ideas with it. *Offline, Asked* — **Yes**, done 2026-10-26
 
 ## G. Parked
 - [ ] **G1** Maps (needs map tiles from the internet). *Online*

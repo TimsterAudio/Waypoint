@@ -25,6 +25,10 @@ pub struct Trip {
     pub home_tz: String,
     pub start: Option<Date>,
     pub end: Option<Date>,
+    /// Still planning: while nothing is booked, changing the first day
+    /// moves the whole trip with it. Trips saved before this was added
+    /// read as not planning.
+    pub planning: bool,
     /// In the home currency.
     pub budget: Option<f64>,
     pub travellers: Vec<String>,
@@ -48,6 +52,7 @@ impl Default for Trip {
             home_tz: String::new(),
             start: None,
             end: None,
+            planning: false,
             budget: None,
             travellers: Vec::new(),
             rates: BTreeMap::new(),
@@ -418,11 +423,32 @@ impl Trip {
     pub fn new(name: &str) -> Trip {
         Trip {
             name: name.into(),
+            planning: true,
             home_tz: TimeZone::system()
                 .iana_name()
                 .unwrap_or_default()
                 .to_string(),
             ..Default::default()
+        }
+    }
+
+    /// Whether changing the first day may move everything with it: only
+    /// while planning, with nothing booked, confirmed or paid.
+    pub fn can_move(&self) -> bool {
+        self.planning && !self.items.iter().any(|i| i.status.committed())
+    }
+
+    /// Move the trip's dates and every item's by `days` (back when
+    /// negative), keeping times and time zones. Payment and cancellation
+    /// dates stay as they are: they're real deadlines.
+    pub fn move_by(&mut self, days: i32) {
+        let by = |d: Date| d.checked_add(jiff::Span::new().days(days)).unwrap_or(d);
+        self.start = self.start.map(by);
+        self.end = self.end.map(by);
+        for i in &mut self.items {
+            for w in [i.start.as_mut(), i.end.as_mut()].into_iter().flatten() {
+                w.date = by(w.date);
+            }
         }
     }
 
@@ -549,6 +575,35 @@ mod tests {
         t.from = "Sydney".into();
         t.to = "Tokyo".into();
         assert_eq!(f.display_title(), "QF 25 Sydney to Tokyo");
+    }
+
+    #[test]
+    fn moving_a_trip_while_planning() {
+        let mut t = Trip::new("T");
+        assert!(t.planning);
+        t.start = Some(date(2026, 12, 4));
+        t.end = Some(date(2026, 12, 8));
+        let mut idea = Item::new(Kind::Activity);
+        idea.start = Some(When::day(date(2026, 12, 5)));
+        let mut stay = Item::new(Kind::Stay);
+        stay.start = Some(When::day(date(2026, 12, 4)));
+        stay.end = Some(When::day(date(2026, 12, 8)));
+        stay.cost.due = Some(date(2026, 11, 20));
+        t.items.extend([idea, stay]);
+        assert!(t.can_move());
+        t.move_by(7);
+        assert_eq!(t.start, Some(date(2026, 12, 11)));
+        assert_eq!(t.end, Some(date(2026, 12, 15)));
+        assert_eq!(t.items[0].date(), Some(date(2026, 12, 12)));
+        assert_eq!(t.items[1].end.as_ref().unwrap().date, date(2026, 12, 15));
+        // A payment date is a real deadline and stays put.
+        assert_eq!(t.items[1].cost.due, Some(date(2026, 11, 20)));
+        // Once something is booked, the dates no longer move things.
+        t.items[1].status = Status::Booked;
+        assert!(!t.can_move());
+        // Trips saved before planning existed aren't planning.
+        let old: Trip = serde_json::from_str(r#"{"name":"Old"}"#).unwrap();
+        assert!(!old.planning);
     }
 
     #[test]
