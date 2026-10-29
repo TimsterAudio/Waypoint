@@ -161,6 +161,28 @@ impl Trip {
         self.rate_for(item).factor().map(|r| item.cost.amount * r)
     }
 
+    /// An item's cost in its own currency and, when that isn't the home
+    /// currency, in the home currency too: "¥92,000 ($905.00)", with "≈"
+    /// while the rate is the trip's current one rather than locked.
+    pub fn cost_label(&self, item: &Item) -> String {
+        let own = format(item.cost.amount, &self.currency_of(item));
+        match self.rate_for(item) {
+            RateUsed::Locked(r) => {
+                format!(
+                    "{own} ({})",
+                    format(item.cost.amount * r, &self.home_currency)
+                )
+            }
+            RateUsed::Current(r) => {
+                format!(
+                    "{own} (≈ {})",
+                    format(item.cost.amount * r, &self.home_currency)
+                )
+            }
+            RateUsed::Home | RateUsed::Missing => own,
+        }
+    }
+
     /// Lock the current rate on an item, as it's paid.
     pub fn lock_rate(&mut self, id: &str) {
         let Some(idx) = self.items.iter().position(|i| i.id == id) else {
@@ -321,5 +343,22 @@ mod tests {
         let tot = t.totals();
         assert_eq!(tot.unpriced, 1);
         assert_eq!(tot.committed, 0.0);
+    }
+
+    #[test]
+    fn cost_label_adds_the_home_amount() {
+        let mut t = trip();
+        let mut i = Item::new(Kind::Stay);
+        i.cost.currency = "JPY".into();
+        i.cost.amount = 92_000.0;
+        assert_eq!(t.cost_label(&i), "¥92,000 (≈ $920.00)");
+        i.cost.locked_rate = Some(0.011);
+        assert_eq!(t.cost_label(&i), "¥92,000 ($1,012.00)");
+        i.cost.currency = "EUR".into();
+        i.cost.locked_rate = None;
+        assert_eq!(t.cost_label(&i), "€92,000.00");
+        i.cost.currency = String::new();
+        t.home_currency = "AUD".into();
+        assert_eq!(t.cost_label(&i), "$92,000.00");
     }
 }

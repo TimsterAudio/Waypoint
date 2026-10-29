@@ -2,7 +2,7 @@
 
 use eframe::egui::{self, pos2, vec2, Align2, CornerRadius, CursorIcon, Rect, Sense, Stroke, Ui};
 use jiff::civil::Date;
-use waypoint_core::{money, Item, Kind, Status, Trip};
+use waypoint_core::{Item, Kind, Status, Trip};
 
 use crate::app::{today, Action};
 use crate::theme;
@@ -107,11 +107,10 @@ pub fn item_row(ui: &mut Ui, trip: &Trip, item: &Item, selected: bool) -> bool {
     );
     let mut right = pill.left() - 12.0;
     if !item.cost.is_empty() {
-        let code = trip.currency_of(item);
         let c = painter.text(
             pos2(right, top),
             Align2::RIGHT_CENTER,
-            money::format(item.cost.amount, &code),
+            trip.cost_label(item),
             theme::body(14.0),
             p.ink2,
         );

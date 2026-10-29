@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **Costs in another currency show the home amount too**, on the itinerary, the phone itinerary and the PDF: "¥92,000 (≈ $938.40)". "≈" means it uses the trip's current rate; a paid item shows the rate it was paid at, without "≈". Costs with no rate yet show only their own currency.
 - **Who's going** takes names separated by commas again: a comma typed after a name was removed at once, so a second name couldn't be added.
 
 - **A planning stage** (roadmap F7): a trip is Planning or Booking (Trip details; the Overview shows "Planning"). While it's planning and nothing is booked, confirmed or paid, changing the first day moves the whole trip and every idea in it, keeping its length and times; payment dates stay put. Once something is booked, changing the dates moves nothing. New trips start in Planning; trips saved before this open as Booking.

@@ -184,7 +184,7 @@ pub fn rows(trip: &Trip, tl: &Timeline, i: &Item) -> Vec<Row> {
         rows.push(row(
             "Cost",
             Value::Cost {
-                amount: crate::money::format(i.cost.amount, &code),
+                amount: trip.cost_label(i),
                 paid: owing.is_none() && i.cost.paid > 0.0,
                 owing,
             },
@@ -274,7 +274,10 @@ mod tests {
         let hotel = &t.items[1];
         let r = rows(&t, &tl, hotel);
         let cost = r.iter().find(|r| r.label == "Cost").unwrap();
-        assert_eq!(cost.value.plain(), "¥92,000 · ¥92,000 to pay by Sat 1 May");
+        assert_eq!(
+            cost.value.plain(),
+            "¥92,000 (≈ $938.40) · ¥92,000 to pay by Sat 1 May"
+        );
     }
 
     #[test]
