@@ -52,8 +52,8 @@ Status: `[ ]` open, `[x]` done, `[-]` dropped, `[~]` later.
 - [ ] **F5** Merge two people's changes item by item instead of choosing one version. *Offline*
 - [ ] **F6** Copy a past trip as the start of a new one. *Offline*
 - [x] **F7** A planning stage: a trip is Planning or Booking, and while it's planning with nothing booked, changing the first day moves the whole trip and its ideas with it. *Offline, Asked* — **Yes**, done 2026-10-26
-- [ ] **F8** Reverse a trip while planning: the whole trip mirrored end to end, so the last place comes first. Each journey's From and To swap, a stay of four nights stays four nights, and an overnight flight home becomes an overnight flight out. Times are cleared, since a 06:00 departure doesn't mean anything flown the other way. *Offline, Asked*
-- [ ] **F9** Swap two places while planning: pick two stays (Siem Reap and Chiang Mai, say) and they trade places in the route, each taking its own nights and the ideas planned there with it; the journeys either side are re-pointed, and their connection notes flagged to check. Ideas tied to a day of the week (a Saturday market) are flagged when they land on another day. *Offline, Asked*
+- [ ] **F8** Reverse a trip while planning: the whole trip mirrored end to end, so the last place comes first. Each journey's From and To swap, a stay of four nights stays four nights, and an overnight flight home becomes an overnight flight out. Times are cleared, since a 06:00 departure doesn't mean anything flown the other way. An Undo puts the trip back exactly as it was, times and notes included. *Offline, Asked*
+- [ ] **F9** Swap two places while planning: pick two stays (Siem Reap and Chiang Mai, say) and they trade places in the route, each taking its own nights and the ideas planned there with it; the journeys either side are re-pointed, and their connection notes flagged to check. Ideas tied to a day of the week (a Saturday market) are flagged when they land on another day. An Undo puts the trip back exactly as it was. *Offline, Asked*
 
 ## G. Parked
 - [ ] **G1** Maps (needs map tiles from the internet). *Online*
