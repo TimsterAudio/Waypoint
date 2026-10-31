@@ -226,7 +226,7 @@ textarea#own-notes:focus { outline: none; }
     <ol class="done-list" id="done-list"></ol>
   </section>
 
-  <p class="small muted">Waypoint 0.1.0 and later · updated 26 October 2026 (B1–B4, E3 and F7 done)</p>
+  <p class="small muted">Waypoint 0.1.0 and later · updated 31 October 2026 (B1–B4, E3 and F7 done; F8 and F9 added)</p>
 </div>
 
 <script>
@@ -269,6 +269,8 @@ const GROUPS = [
     ["F5", "Merge two people's changes", "Item by item, instead of choosing one person's version.", "offline"],
     ["F6", "Copy a past trip", "Start a new trip from an old one.", "offline"],
     ["F7", "A planning stage", "A trip is Planning or Booking. While planning with nothing booked, changing the first day moves the whole trip and its ideas with it.", "offline", true],
+    ["F8", "Reverse a trip while planning", "The whole trip mirrored end to end: the last place comes first, journeys swap From and To, each stay keeps its nights. Times are cleared.", "offline", true],
+    ["F9", "Swap two places while planning", "Pick two stays and they trade places in the route, each with its nights and ideas; the journeys either side are re-pointed. Day-of-the-week ideas that land on another day are flagged.", "offline", true],
   ]},
   { code: "G", title: "Parked", blurb: "Need services Waypoint doesn't use yet.", items: [
     ["G1", "Maps", "Where each booking is, on a map (needs map tiles from the internet).", "online"],
