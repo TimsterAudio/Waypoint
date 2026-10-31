@@ -11,9 +11,18 @@ Status: `[ ]` open, `[x]` done, `[-]` dropped, `[~]` later.
 - **Yes:** A1, A2, A3, B1, B2, B3, B4, E3, F7
 - **Undecided:** C1, C2, C3, D1, D2, D3, D4, D5, E1, E2, E4, F1, F2, F3, F4, F5, F6, F8, F9, F10, G1, G2
 
-## Next, whatever is decided
+## Suggested order (2026-10-31)
 
-- Try it for real on a trip: Google Drive on Windows and Linux, the phone page on the iPhone. Problems found go in GitHub issues.
+A path through everything listed, earliest first. It's a suggestion: only items marked Yes get built, so the undecided ones in it still need a mark.
+
+1. **Try it for real.** The Dallas trip: Google Drive on Windows and Linux, the phone page on the iPhone. Gaps go in GitHub issues and are fixed first.
+2. **Undo first: F10.** Every change after it is safe to try, and F8 and F9 use it.
+3. **Planning tools: F8, F9, then F6.** While SE Asia 2027 is still ideas, so the route can be tried both ways before anything is booked. All three reshape a whole trip, like moving the first day.
+4. **Before you go: A3, A2, A1, then D5, D1, D2.** A3 makes each traveller a person with details rather than a name; insurance (A2) and loyalty numbers (D5) hang off the same people. Vietnam and Cambodia need visas for October 2027, so A3 has a real deadline. The to-do list (D1) can then take "visa to apply for" from A3, and packing (D2) follows it.
+5. **Small sharing wins: E1, E4, C3.** Calendar file, notes on the itinerary to share, baggage and seats on flights. Each is small and stands alone.
+6. **On the trip: D3, D4, E2.** Spending each day, emergency and local information, tickets attached to bookings.
+7. **Two people, one trip in the cloud: F5, then F1 and F2, then F3.** Merging item by item (F5) comes before a phone that can edit (F1), since that makes two editors far more likely. F1 and F2 share one Google Cloud project. Split costs (F3) build on A3's travellers.
+8. **Paid or parked: C1, C2, F4, G1, G2.** Flight schedules and live status need paid services (C2 belongs with F1). Spreadsheet import (F4) only if old trips are worth bringing in. Maps and booking emails stay parked.
 
 ## A. Asked for after the first runs
 - [ ] **A1** Pet care while away: where the pets are boarded or who's minding them, drop-off and pick-up dates and times, contact, cost, status, notes. Covers dates like a stay; the Overview flags trip days with no care booked. *Offline, Asked* — **Yes**

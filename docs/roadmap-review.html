@@ -84,6 +84,10 @@ button.primary:hover { background: var(--trace); border-color: var(--trace); }
 .copied { font-size: 13px; color: var(--yes); min-width: 6em; }
 
 section.group { display: flex; flex-direction: column; gap: 6px; }
+.order { margin: 4px 0 0; padding-left: 1.6em; display: flex; flex-direction: column; gap: 8px; }
+.order li { max-width: 72ch; }
+.order li::marker { font: 600 16px var(--display); color: var(--trace); }
+.order b { font-weight: 600; }
 .group-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; border-bottom: 2px solid var(--ink); padding-bottom: 6px; }
 .group-head .code { font: 600 24px/1 var(--display); color: var(--trace); }
 .group-head p { font-size: 14px; color: var(--ink-2); }
@@ -213,6 +217,20 @@ textarea#own-notes:focus { outline: none; }
 
   <textarea id="copy-fallback" class="screen-only" readonly hidden aria-label="Your choices as text" style="width:100%;min-height:160px;font:400 13px/1.5 var(--body);background:var(--sheet);color:var(--ink);border:1px solid var(--grid);border-radius:6px;padding:10px"></textarea>
 
+  <section class="group" id="order">
+    <div class="group-head"><span class="code">→</span><h2>Suggested order</h2><p>A path through everything below. Only items you mark Yes get built.</p></div>
+    <ol class="order">
+      <li><b>Try it for real.</b> The Dallas trip, on Drive and the iPhone. Gaps found are fixed first.</li>
+      <li><b>Undo first: F10.</b> Every change after it is safe to try, and F8 and F9 use it.</li>
+      <li><b>Planning tools: F8, F9, then F6.</b> While SE Asia 2027 is still ideas, so the route can be tried both ways before anything is booked.</li>
+      <li><b>Before you go: A3, A2, A1, then D5, D1, D2.</b> A3 makes each traveller a person with details; insurance and loyalty numbers hang off them. Vietnam and Cambodia need visas for October 2027. Visas still to apply for feed the to-do list.</li>
+      <li><b>Small sharing wins: E1, E4, C3.</b> Calendar file, notes on the itinerary to share, baggage and seats.</li>
+      <li><b>On the trip: D3, D4, E2.</b> Daily spending, emergency and local information, tickets attached to bookings.</li>
+      <li><b>Two people, one trip in the cloud: F5, then F1 and F2, then F3.</b> Merging changes item by item comes before a phone that can edit. F1 and F2 share one Google Cloud project.</li>
+      <li><b>Paid or parked: C1, C2, F4, G1, G2.</b> Paid flight services (C2 with F1), spreadsheet import only if old trips are worth it, maps and emails parked.</li>
+    </ol>
+  </section>
+
   <div id="groups"></div>
 
   <section class="group own">
@@ -226,7 +244,7 @@ textarea#own-notes:focus { outline: none; }
     <ol class="done-list" id="done-list"></ol>
   </section>
 
-  <p class="small muted">Waypoint 0.1.0 and later · updated 31 October 2026 (B1–B4, E3 and F7 done; F8, F9 and F10 added)</p>
+  <p class="small muted">Waypoint 0.1.0 and later · updated 31 October 2026 (B1–B4, E3 and F7 done; F8, F9 and F10 added; suggested order)</p>
 </div>
 
 <script>
