@@ -9,7 +9,7 @@ Status: `[ ]` open, `[x]` done, `[-]` dropped, `[~]` later.
 ## Decisions so far (2026-10-24)
 
 - **Yes:** A1, A2, A3, B1, B2, B3, B4, E3, F7
-- **Undecided:** C1, C2, C3, D1, D2, D3, D4, D5, E1, E2, E4, F1, F2, F3, F4, F5, F6, F8, F9, G1, G2
+- **Undecided:** C1, C2, C3, D1, D2, D3, D4, D5, E1, E2, E4, F1, F2, F3, F4, F5, F6, F8, F9, F10, G1, G2
 
 ## Next, whatever is decided
 
@@ -54,6 +54,7 @@ Status: `[ ]` open, `[x]` done, `[-]` dropped, `[~]` later.
 - [x] **F7** A planning stage: a trip is Planning or Booking, and while it's planning with nothing booked, changing the first day moves the whole trip and its ideas with it. *Offline, Asked* — **Yes**, done 2026-10-26
 - [ ] **F8** Reverse a trip while planning: the whole trip mirrored end to end, so the last place comes first. Each journey's From and To swap, a stay of four nights stays four nights, and an overnight flight home becomes an overnight flight out. Times are cleared, since a 06:00 departure doesn't mean anything flown the other way. An Undo puts the trip back exactly as it was, times and notes included. *Offline, Asked*
 - [ ] **F9** Swap two places while planning: pick two stays (Siem Reap and Chiang Mai, say) and they trade places in the route, each taking its own nights and the ideas planned there with it; the journeys either side are re-pointed, and their connection notes flagged to check. Ideas tied to a day of the week (a Saturday market) are flagged when they land on another day. An Undo puts the trip back exactly as it was. *Offline, Asked*
+- [ ] **F10** Undo and Redo for any change: an edit, a deleted item, a status change, a move of the whole trip. Ctrl+Z and Ctrl+Y (and Undo and Redo buttons), back through everything changed since the trip was opened. An undo is saved like any other change, so it reaches the other computer too. Changes taken in from the other person aren't undone from here. *Offline, Asked*
 
 ## G. Parked
 - [ ] **G1** Maps (needs map tiles from the internet). *Online*
