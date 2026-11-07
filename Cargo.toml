@@ -3,7 +3,7 @@ members = ["crates/waypoint-core"]
 
 [package]
 name = "waypoint"
-version = "0.1.0"
+version = "0.2.0"
 description = "A holiday planner: day-by-day itinerary, bookings and costs"
 edition = "2021"
 default-run = "waypoint"

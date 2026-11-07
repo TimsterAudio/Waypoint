@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 0.2.0 – 2026-11-07
+
+Everything since the first version, from planning real trips: time zones that work across the date line and come from the places themselves, the planning stage with reverse and swap, Undo and Redo, PDFs and an itinerary to share.
+
 - **Undo and Redo** (roadmap F10) for any change: an edit, a deleted item, a status change, moving or reshaping the trip. Ctrl+Z and Ctrl+Y (or Ctrl+Shift+Z), or Undo and Redo under Close trip, back through everything changed since the trip was opened. Typing in one box is one step; while a box is being typed in, Ctrl+Z undoes the typing there. An undo saves like any change. When changes saved elsewhere are taken in, the history starts again, so the other person's changes aren't undone from here.
 - **Reverse the trip** (F8), on Trip details while planning with nothing booked: the last place first, every journey the other way (From and To, and titles such as "Fly Melbourne to Da Nang"), each stay keeping its nights, the first and last days unchanged. Times are cleared.
 - **Swap two places** (F9), in the same place: two stays trade places in the route, each with its nights and what's planned during it; the stays between move along, and the journeys between are re-pointed and their times cleared. Journeys whose notes name a connection ("Connecting in Bangkok") are named in the message to check.
