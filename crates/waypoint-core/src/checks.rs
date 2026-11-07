@@ -70,6 +70,7 @@ pub fn check(trip: &Trip, today: Date) -> Vec<Warning> {
     clashes(trip, &mut out);
     money(trip, today, &mut out);
     details(trip, &mut out);
+    weekdays(trip, &mut out);
     out.sort_by_key(|w| (w.severity, w.day));
     out
 }
@@ -269,6 +270,48 @@ fn money(trip: &Trip, today: Date, out: &mut Vec<Warning>) {
 /// Whether a booking would normally come with a reference: stays and
 /// journeys, except a drive in your own car, and a stay with no cost and
 /// nobody it's booked with (with family or friends).
+/// Things named for a day of the week ("Saturday Walking Street",
+/// "Chatuchak Weekend Market") that are planned for another day, as can
+/// happen after the trip is moved, reversed or reshuffled.
+fn weekdays(trip: &Trip, out: &mut Vec<Warning>) {
+    use jiff::civil::Weekday::*;
+    const NAMES: [(&str, &[jiff::civil::Weekday]); 8] = [
+        ("monday", &[Monday]),
+        ("tuesday", &[Tuesday]),
+        ("wednesday", &[Wednesday]),
+        ("thursday", &[Thursday]),
+        ("friday", &[Friday]),
+        ("saturday", &[Saturday]),
+        ("sunday", &[Sunday]),
+        ("weekend", &[Saturday, Sunday]),
+    ];
+    for i in &trip.items {
+        let Some(d) = i.date() else { continue };
+        if i.kind == Kind::Stay || i.status == Status::Cancelled {
+            continue;
+        }
+        let title = i.title.to_lowercase();
+        let words: Vec<&str> = title
+            .split(|c: char| !c.is_alphanumeric())
+            .filter(|w| !w.is_empty())
+            .collect();
+        let named: Vec<&(&str, &[jiff::civil::Weekday])> = NAMES
+            .iter()
+            .filter(|(n, _)| words.iter().any(|w| w == n || *w == format!("{n}s")))
+            .collect();
+        if named.is_empty() || named.iter().any(|(_, days)| days.contains(&d.weekday())) {
+            continue;
+        }
+        out.push(w(
+            format!("weekday:{}", i.id),
+            Severity::Check,
+            format!("{} is planned for {}", i.display_title(), day_label(d)),
+            Some(d),
+            vec![i.id.clone()],
+        ));
+    }
+}
+
 fn needs_reference(i: &Item) -> bool {
     match i.kind {
         Kind::Travel => !i
@@ -368,6 +411,36 @@ mod tests {
         t.start = Some(date(2027, 5, 1));
         t.end = Some(date(2027, 5, 6));
         t
+    }
+
+    #[test]
+    fn flags_a_saturday_market_on_a_tuesday() {
+        let mut t = trip();
+        for (title, d) in [
+            ("Saturday Walking Street", date(2027, 5, 4)),
+            ("Sunday Walking Street", date(2027, 5, 2)),
+            ("Chatuchak Weekend Market", date(2027, 5, 1)),
+            ("Weekend market", date(2027, 5, 3)),
+            ("Lunch on Sundays", date(2027, 5, 5)),
+        ] {
+            let mut i = Item::new(Kind::Activity);
+            i.title = title.into();
+            i.start = Some(When::day(d));
+            t.items.push(i);
+        }
+        let found: Vec<String> = check(&t, date(2027, 1, 1))
+            .into_iter()
+            .filter(|w| w.key.starts_with("weekday:"))
+            .map(|w| w.text)
+            .collect();
+        assert_eq!(
+            found,
+            [
+                "Weekend market is planned for Mon 3 May",
+                "Saturday Walking Street is planned for Tue 4 May",
+                "Lunch on Sundays is planned for Wed 5 May",
+            ]
+        );
     }
 
     #[test]

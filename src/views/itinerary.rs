@@ -339,7 +339,21 @@ impl Itinerary {
                 ui::muted(ui, "Ideas without a day go here.");
             }
             ui.spacing_mut().item_spacing.y = 2.0;
-            for item in undated {
+            // A heading for each town once there's more than one.
+            let towns: Vec<String> = undated.iter().map(|i| i.town()).collect();
+            let headed = towns.iter().any(|t| *t != towns[0]);
+            let mut last: Option<&str> = None;
+            for (item, town) in undated.into_iter().zip(&towns) {
+                if headed && last != Some(town.as_str()) {
+                    ui.add_space(if last.is_some() { 8.0 } else { 4.0 });
+                    let name = if town.is_empty() {
+                        "No place"
+                    } else {
+                        town.as_str()
+                    };
+                    ui::small(ui, name, p.ink2);
+                    last = Some(town.as_str());
+                }
                 if item_row(ui, trip, item, open == Some(item.id.as_str())) {
                     actions.push(Action::Open(item.id.clone()));
                 }

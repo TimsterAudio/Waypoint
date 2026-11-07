@@ -4,11 +4,15 @@
 //! seconds the file is checked for changes saved elsewhere (the other
 //! person, through Google Drive): with nothing unsaved here they're taken
 //! straight in; with unsaved changes here, the person chooses whose to keep.
+//!
+//! Every change can be undone, back to when the trip was opened (or last
+//! taken in from elsewhere). Typing in one box is one step.
 
 use std::time::{Duration, Instant};
 
+use eframe::egui;
 use waypoint_core::file::{self, Lock, TripFile};
-use waypoint_core::{Item, Trip};
+use waypoint_core::Trip;
 
 /// How long after the last edit to save.
 const SAVE_AFTER: Duration = Duration::from_millis(1500);
@@ -16,6 +20,10 @@ const SAVE_AFTER: Duration = Duration::from_millis(1500);
 const RETRY_AFTER: Duration = Duration::from_secs(10);
 /// How often to look for changes saved elsewhere.
 const CHECK_EVERY: Duration = Duration::from_secs(3);
+/// How many steps Undo goes back.
+const UNDO_STEPS: usize = 300;
+/// How long a message with Undo on it shows.
+const NOTE_FOR: Duration = Duration::from_secs(12);
 
 pub enum SaveState {
     Saved(Instant),
@@ -34,8 +42,17 @@ pub struct Doc {
     pub conflict: bool,
     /// Someone else had the trip open when it was opened here.
     pub elsewhere: Option<Lock>,
-    /// The last item deleted, with where it was, for Undo.
-    pub deleted: Option<(Item, usize, Instant)>,
+    /// The trip before each change, the latest last, for Undo.
+    undo: Vec<Trip>,
+    /// Changes undone, the latest last, for Redo.
+    redo: Vec<Trip>,
+    /// The box the last change was typed in, so typing in it again joins
+    /// that step. None after anything else, so the next change is a step.
+    step: Option<egui::Id>,
+    /// A message with Undo on it ("Deleted …", "Reversed the trip"), and
+    /// how many steps there were after it, so Undo shows only until the
+    /// next change.
+    pub note: Option<(String, Instant, usize)>,
     /// A short message, such as "Updated with changes from elsewhere".
     pub toast: Option<(String, Instant)>,
     pub me: String,
@@ -64,7 +81,10 @@ impl Doc {
             last_check: Instant::now(),
             conflict: false,
             elsewhere,
-            deleted: None,
+            undo: Vec::new(),
+            redo: Vec::new(),
+            step: None,
+            note: None,
             toast: None,
             me,
             reloaded: false,
@@ -75,9 +95,23 @@ impl Doc {
         self.file.is_none()
     }
 
-    /// Note that the trip was changed this frame. Items that changed get
-    /// stamped with when and by whom.
+    /// Note that the trip was changed, as a step of its own.
     pub fn edited(&mut self, before: &Trip) {
+        self.edited_in(before, None);
+    }
+
+    /// Note that the trip was changed this frame, while typing in `focus`
+    /// (if anything): more typing in the same box joins the same step.
+    /// Items that changed get stamped with when and by whom.
+    pub fn edited_in(&mut self, before: &Trip, focus: Option<egui::Id>) {
+        if focus.is_none() || focus != self.step {
+            self.undo.push(before.clone());
+            if self.undo.len() > UNDO_STEPS {
+                self.undo.remove(0);
+            }
+        }
+        self.step = focus;
+        self.redo.clear();
         let now = jiff::Timestamp::now();
         for item in &mut self.trip.items {
             let old = before.items.iter().find(|i| i.id == item.id);
@@ -94,6 +128,72 @@ impl Doc {
 
     pub fn toast(&mut self, s: impl Into<String>) {
         self.toast = Some((s.into(), Instant::now()));
+    }
+
+    pub fn can_undo(&self) -> bool {
+        !self.undo.is_empty()
+    }
+
+    pub fn can_redo(&self) -> bool {
+        !self.redo.is_empty()
+    }
+
+    /// Put the trip back as it was before the last change.
+    pub fn undo(&mut self) -> bool {
+        let Some(t) = self.undo.pop() else {
+            return false;
+        };
+        self.redo.push(std::mem::replace(&mut self.trip, t));
+        self.restored();
+        true
+    }
+
+    /// Make the last change undone again.
+    pub fn redo(&mut self) -> bool {
+        let Some(t) = self.redo.pop() else {
+            return false;
+        };
+        self.undo.push(std::mem::replace(&mut self.trip, t));
+        self.restored();
+        true
+    }
+
+    fn restored(&mut self) {
+        self.step = None;
+        self.note = None;
+        self.last_edit = Instant::now();
+        if self.file.is_some() {
+            self.state = SaveState::Unsaved;
+        }
+    }
+
+    /// Show a message with Undo on it for the change about to be noted
+    /// (this frame's), such as "Reversed the trip".
+    pub fn note_undo(&mut self, s: impl Into<String>) {
+        self.step = None;
+        self.note = Some((s.into(), Instant::now(), self.undo.len() + 1));
+    }
+
+    /// The message with Undo on it, while it's still the latest change.
+    pub fn undo_note(&mut self) -> Option<String> {
+        let (text, at, steps) = self.note.as_ref()?;
+        // One step more while this frame's change is still to be noted.
+        let latest = *steps == self.undo.len() || *steps == self.undo.len() + 1;
+        if at.elapsed() < NOTE_FOR && latest {
+            Some(text.clone())
+        } else {
+            self.note = None;
+            None
+        }
+    }
+
+    /// The trip was replaced by the version saved elsewhere: what's undone
+    /// from here would undo their changes too, so the history starts again.
+    fn forget_history(&mut self) {
+        self.undo.clear();
+        self.redo.clear();
+        self.step = None;
+        self.note = None;
     }
 
     /// Save if it's time, and look for changes from elsewhere. Call every
@@ -123,6 +223,7 @@ impl Doc {
                     match file.reload() {
                         Ok(t) => {
                             self.trip = t;
+                            self.forget_history();
                             self.toast("Updated with changes saved elsewhere");
                         }
                         Err(e) => self.state = SaveState::Failed(e.to_string(), Instant::now()),
@@ -196,6 +297,7 @@ impl Doc {
         match file.reload() {
             Ok(t) => {
                 self.trip = t;
+                self.forget_history();
                 self.reloaded = true;
                 self.conflict = false;
                 self.state = SaveState::Saved(Instant::now());
@@ -236,16 +338,8 @@ impl Doc {
     pub fn delete(&mut self, id: &str) {
         if let Some(idx) = self.trip.items.iter().position(|i| i.id == id) {
             let item = self.trip.items.remove(idx);
-            self.deleted = Some((item, idx, Instant::now()));
+            self.note_undo(format!("Deleted {}", item.display_title()));
         }
-    }
-
-    pub fn undo_delete(&mut self) -> Option<String> {
-        let (item, idx, _) = self.deleted.take()?;
-        let id = item.id.clone();
-        let idx = idx.min(self.trip.items.len());
-        self.trip.items.insert(idx, item);
-        Some(id)
     }
 
     /// Save anything outstanding and let go of the lock. Called on the way

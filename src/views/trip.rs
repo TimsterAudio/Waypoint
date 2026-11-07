@@ -1,7 +1,7 @@
 //! The trip's own details: name, dates, currency, budget, who's going, notes.
 
 use eframe::egui::{self, Ui};
-use waypoint_core::money;
+use waypoint_core::{money, reshape};
 
 use crate::app::{today, Action};
 use crate::doc::Doc;
@@ -187,6 +187,10 @@ pub fn ui(ui: &mut Ui, doc: &mut Doc, actions: &mut Vec<Action>) {
         });
     });
 
+    if doc.trip.planning {
+        reshape(ui, doc);
+    }
+
     ui::panel(ui, |ui| {
         ui::h2(ui, "The file");
         match &doc.file {
@@ -219,4 +223,155 @@ pub fn ui(ui: &mut Ui, doc: &mut Doc, actions: &mut Vec<Action>) {
             }
         }
     });
+}
+
+/// Things planned for the wrong day of the week ("Saturday market" on a
+/// Tuesday), to mention after reshaping.
+fn wrong_weekdays(trip: &waypoint_core::Trip) -> usize {
+    waypoint_core::checks::open(trip, today())
+        .iter()
+        .filter(|w| w.key.starts_with("weekday:"))
+        .count()
+}
+
+fn after_reshape(doc: &mut Doc, done: String, weekdays_before: usize) {
+    let n = wrong_weekdays(&doc.trip);
+    let more = if n > weekdays_before {
+        format!(
+            " {n} thing{} now on the wrong day of the week (see the Overview).",
+            if n == 1 { " is" } else { "s are" }
+        )
+    } else {
+        String::new()
+    };
+    doc.note_undo(format!("{done}{more}"));
+}
+
+/// Reverse the trip, or swap two of its stays: only while planning with
+/// nothing booked, like moving the first day.
+fn reshape(ui: &mut Ui, doc: &mut Doc) {
+    let p = ui::pal(ui);
+    ui::panel(ui, |ui| {
+        ui::h2(ui, "Try the route another way");
+        if !doc.trip.can_move() {
+            ui::muted(ui, "Reversing the trip or swapping two places works only while planning with nothing booked, confirmed or paid.");
+            return;
+        }
+        if doc.trip.start.is_none() || doc.trip.end.is_none() {
+            ui::muted(
+                ui,
+                "Give the trip its dates first, then it can be reversed or two places swapped.",
+            );
+            return;
+        }
+        ui::muted(
+            ui,
+            "Both keep the trip's first and last days. Undo puts everything back as it was.",
+        );
+        ui.add_space(4.0);
+        ui.horizontal(|ui| {
+            if ui::button(ui, "Reverse the trip", Btn::Secondary).clicked() {
+                let weekdays = wrong_weekdays(&doc.trip);
+                reshape::reverse(&mut doc.trip);
+                after_reshape(
+                    doc,
+                    "Reversed the trip. Times were cleared.".into(),
+                    weekdays,
+                );
+            }
+            ui::small(
+                ui,
+                "The last place first and every journey the other way. Times are cleared.",
+                p.ink2,
+            );
+        });
+        let stays: Vec<(String, String)> = reshape::stays(&doc.trip)
+            .iter()
+            .map(|s| {
+                let nights = s.nights().len();
+                let from = s
+                    .date()
+                    .map(waypoint_core::checks::day_label)
+                    .unwrap_or_default();
+                (
+                    s.id.clone(),
+                    format!(
+                        "{} · {from}, {nights} night{}",
+                        s.display_title(),
+                        if nights == 1 { "" } else { "s" }
+                    ),
+                )
+            })
+            .collect();
+        ui.add_space(6.0);
+        if stays.len() < 2 {
+            ui::muted(ui, "Swapping needs two stays with their dates.");
+            return;
+        }
+        let key = ui.id().with("swap-picks");
+        let (mut a, mut b): (String, String) = ui.data(|d| d.get_temp(key)).unwrap_or_default();
+        ui.horizontal(|ui| {
+            ui::small(ui, "Swap", p.ink);
+            pick(ui, "swap-a", &stays, &mut a);
+            ui::small(ui, "and", p.ink);
+            pick(ui, "swap-b", &stays, &mut b);
+            if ui::button(ui, "Swap", Btn::Secondary).clicked() {
+                let names = |id: &str| {
+                    doc.trip
+                        .item(id)
+                        .map(|i| {
+                            let t = i.town();
+                            if t.is_empty() {
+                                i.display_title()
+                            } else {
+                                t
+                            }
+                        })
+                        .unwrap_or_default()
+                };
+                let (na, nb) = (names(&a), names(&b));
+                let weekdays = wrong_weekdays(&doc.trip);
+                match reshape::swap(&mut doc.trip, &a, &b) {
+                    Ok(check) => {
+                        let mut done = format!("Swapped {na} and {nb}.");
+                        if !check.is_empty() {
+                            done.push_str(&format!(
+                                " Check {}: the notes name a connection.",
+                                check.join(" and ")
+                            ));
+                        }
+                        after_reshape(doc, done, weekdays);
+                    }
+                    Err(e) => doc.toast(e),
+                }
+            }
+        });
+        ui::small(ui, "Each takes its nights and what's planned there with it; the places between move along, and the journeys between are re-pointed.", p.ink2);
+        ui.data_mut(|d| d.insert_temp(key, (a, b)));
+    });
+}
+
+/// A stay picked from the trip's stays.
+fn pick(ui: &mut Ui, id: &str, stays: &[(String, String)], chosen: &mut String) {
+    let shown = stays
+        .iter()
+        .find(|(i, _)| i == chosen)
+        .map(|(_, l)| l.as_str())
+        .unwrap_or("Choose a stay");
+    egui::ComboBox::from_id_salt(id)
+        .selected_text(egui::RichText::new(shown).font(theme::medium(14.0)))
+        .width(260.0)
+        .show_ui(ui, |ui| {
+            for (i, label) in stays {
+                if ui
+                    .selectable_label(
+                        i == chosen,
+                        egui::RichText::new(label).font(theme::body(14.0)),
+                    )
+                    .clicked()
+                {
+                    *chosen = i.clone();
+                }
+            }
+        });
 }

@@ -221,8 +221,8 @@ textarea#own-notes:focus { outline: none; }
     <div class="group-head"><span class="code">→</span><h2>Suggested order</h2><p>A path through everything below. Only items you mark Yes get built.</p></div>
     <ol class="order">
       <li><b>Try it for real.</b> The Dallas trip, on Drive and the iPhone. Gaps found are fixed first.</li>
-      <li><b>Undo first: F10.</b> Every change after it is safe to try, and F8 and F9 use it.</li>
-      <li><b>Planning tools: F8, F9, then F6.</b> While SE Asia 2027 is still ideas, so the route can be tried both ways before anything is booked.</li>
+      <li><b>Undo first: F10.</b> Done.</li>
+      <li><b>Planning tools: F8, F9 (done), then F6.</b> While SE Asia 2027 is still ideas, so the route can be tried both ways before anything is booked.</li>
       <li><b>Before you go: A3, A2, A1, then D5, D1, D2.</b> A3 makes each traveller a person with details; insurance and loyalty numbers hang off them. Vietnam and Cambodia need visas for October 2027. Visas still to apply for feed the to-do list.</li>
       <li><b>Small sharing wins: E1, E4, C3.</b> Calendar file, notes on the itinerary to share, baggage and seats.</li>
       <li><b>On the trip: D3, D4, E2.</b> Daily spending, emergency and local information, tickets attached to bookings.</li>
@@ -244,7 +244,7 @@ textarea#own-notes:focus { outline: none; }
     <ol class="done-list" id="done-list"></ol>
   </section>
 
-  <p class="small muted">Waypoint 0.1.0 and later · updated 31 October 2026 (B1–B4, E3 and F7 done; F8, F9 and F10 added; suggested order)</p>
+  <p class="small muted">Waypoint 0.1.0 and later · updated 7 November 2026 (B1–B4, E3, F7, F8, F9 and F10 done)</p>
 </div>
 
 <script>
@@ -300,12 +300,14 @@ const GROUPS = [
     ["Z2", "Home time zone", "Set on Trip details; new trips take it from the computer.", "offline"],
     ["Z3", "Address and phone for stays", "On the itinerary under each stay.", "offline", true],
     ["Z4", "Itinerary to share", "Booked items without costs, references or notes, for family and friends; prints to PDF from the browser.", "offline", true],
+    ["Z5", "No date yet grouped by town", "Ideas for one place sit together, with a heading for each town.", "offline", true],
+    ["Z6", "Wrong day of the week", "Something named for a day (\"Saturday Walking Street\") that's planned for another day is listed under To look at.", "offline"],
   ]},
 ];
 // Built and in the Latest build.
-const DONE = new Set(["B1", "B2", "B3", "B4", "E3", "F7", "Z1", "Z2", "Z3", "Z4"]);
+const DONE = new Set(["B1", "B2", "B3", "B4", "E3", "F7", "F8", "F9", "F10", "Z1", "Z2", "Z3", "Z4", "Z5", "Z6"]);
 // Decided already (ROADMAP.md); shown ticked until changed here.
-const DECIDED = { A1: "yes", A2: "yes", A3: "yes", B1: "yes", B2: "yes", B3: "yes", B4: "yes", E3: "yes" };
+const DECIDED = { A1: "yes", A2: "yes", A3: "yes", F8: "yes", F9: "yes", F10: "yes", B1: "yes", B2: "yes", B3: "yes", B4: "yes", E3: "yes" };
 const TAG = { offline: "Offline", online: "Online", paid: "Paid" };
 const KEY = "waypoint-roadmap-v1";
 

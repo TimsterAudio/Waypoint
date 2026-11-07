@@ -87,6 +87,8 @@ pub enum Action {
     SavePdf {
         shared: bool,
     },
+    Undo,
+    Redo,
 }
 
 pub struct WaypointApp {
@@ -391,6 +393,16 @@ impl WaypointApp {
                 doc.edited(&before);
             }
             Action::MarkOk(_) | Action::UnmarkOk(_) => {}
+            Action::Undo => {
+                if let Some(doc) = &mut self.doc {
+                    doc.undo();
+                }
+            }
+            Action::Redo => {
+                if let Some(doc) = &mut self.doc {
+                    doc.redo();
+                }
+            }
             Action::ShowSharePage => {
                 let Some(doc) = &mut self.doc else { return };
                 if let Some(p) = doc.write_share_page() {
@@ -503,12 +515,29 @@ impl WaypointApp {
             }
             ui.add_space(2.0);
         }
-        if self.doc.is_some() {
+        if let Some(doc) = &self.doc {
             ui.add_space(14.0);
             ui.horizontal(|ui| {
                 ui.add_space(6.0);
                 if ui::link(ui, "Close trip").clicked() {
                     action = Some(Action::CloseTrip);
+                }
+            });
+            ui.add_space(4.0);
+            ui.horizontal(|ui| {
+                ui.add_space(6.0);
+                ui.spacing_mut().item_spacing.x = 16.0;
+                for (label, can, a, keys) in [
+                    ("Undo", doc.can_undo(), Action::Undo, "Ctrl+Z"),
+                    ("Redo", doc.can_redo(), Action::Redo, "Ctrl+Y"),
+                ] {
+                    if can {
+                        if ui::link(ui, label).on_hover_text(keys).clicked() {
+                            action = Some(a);
+                        }
+                    } else {
+                        ui::small(ui, label, theme::alpha(p.ink2, 0.45));
+                    }
                 }
             });
         }
@@ -640,6 +669,26 @@ impl eframe::App for WaypointApp {
         if self.route.needs_trip() && self.doc.is_none() {
             self.route = Route::Overview;
         }
+        // Undo and Redo from the keyboard, unless a box is being typed in:
+        // there Ctrl+Z undoes the typing, as anywhere else.
+        if let Some(doc) = &mut self.doc {
+            use egui::{Key, KeyboardShortcut, Modifiers};
+            if ctx.memory(|m| m.focused().is_none()) {
+                let redo = ctx.input_mut(|i| {
+                    i.consume_shortcut(&KeyboardShortcut::new(
+                        Modifiers::COMMAND | Modifiers::SHIFT,
+                        Key::Z,
+                    )) || i.consume_shortcut(&KeyboardShortcut::new(Modifiers::COMMAND, Key::Y))
+                });
+                if redo {
+                    doc.redo();
+                } else if ctx.input_mut(|i| {
+                    i.consume_shortcut(&KeyboardShortcut::new(Modifiers::COMMAND, Key::Z))
+                }) {
+                    doc.undo();
+                }
+            }
+        }
         // An item that's gone (deleted, or removed elsewhere) closes.
         if let (Some(id), Some(doc)) = (&self.open_item, &self.doc) {
             if doc.trip.item(id).is_none() {
@@ -765,7 +814,7 @@ impl eframe::App for WaypointApp {
                         ui.add_space(48.0);
                     });
                 if let Some(doc) = &mut self.doc {
-                    toasts(ui, doc, &mut self.open_item);
+                    toasts(ui, doc, &mut actions);
                 }
             });
 
@@ -773,7 +822,7 @@ impl eframe::App for WaypointApp {
             if std::mem::take(&mut doc.reloaded) {
                 // Replaced from disk: not an edit.
             } else if doc.trip != before {
-                doc.edited(&before);
+                doc.edited_in(&before, ctx.memory(|m| m.focused()));
             }
         }
         for a in actions {
@@ -869,19 +918,11 @@ fn banners(ui: &mut egui::Ui, doc: &mut Doc, phone_page: bool) {
 }
 
 /// The message at the bottom: "Deleted … Undo", "Updated with changes…".
-fn toasts(ui: &mut egui::Ui, doc: &mut Doc, open_item: &mut Option<String>) {
+fn toasts(ui: &mut egui::Ui, doc: &mut Doc, actions: &mut Vec<Action>) {
     let p = Palette::of(ui.ctx());
     let rect = ui.max_rect();
-    let mut text = None;
-    let mut undo = false;
-    if let Some((item, _, at)) = &doc.deleted {
-        if at.elapsed() < Duration::from_secs(12) {
-            text = Some(format!("Deleted {}", item.display_title()));
-            undo = true;
-        } else {
-            doc.deleted = None;
-        }
-    }
+    let mut text = doc.undo_note();
+    let undo = text.is_some();
     if text.is_none() {
         if let Some((t, at)) = &doc.toast {
             if at.elapsed() < Duration::from_secs(6) {
@@ -903,10 +944,14 @@ fn toasts(ui: &mut egui::Ui, doc: &mut Doc, open_item: &mut Option<String>) {
                 .inner_margin(Margin::symmetric(16, 10))
                 .show(ui, |ui| {
                     ui.horizontal(|ui| {
-                        ui.label(
-                            egui::RichText::new(text)
-                                .font(theme::body(14.0))
-                                .color(p.paper),
+                        ui.set_max_width(640.0);
+                        ui.add(
+                            egui::Label::new(
+                                egui::RichText::new(text)
+                                    .font(theme::body(14.0))
+                                    .color(p.paper),
+                            )
+                            .wrap(),
                         );
                         if undo {
                             let r = ui.add(
@@ -922,7 +967,7 @@ fn toasts(ui: &mut egui::Ui, doc: &mut Doc, open_item: &mut Option<String>) {
                                 .sense(Sense::click()),
                             );
                             if r.on_hover_cursor(CursorIcon::PointingHand).clicked() {
-                                *open_item = doc.undo_delete();
+                                actions.push(Action::Undo);
                             }
                         }
                     });

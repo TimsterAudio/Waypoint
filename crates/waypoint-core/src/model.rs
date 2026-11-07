@@ -370,6 +370,25 @@ impl Item {
         self.start.as_ref().map(|w| w.date)
     }
 
+    /// The town an item is in, for grouping ideas: the first part of its
+    /// place (or address, or where a journey goes) that's a known town, so
+    /// "Wua Lai Road, Chiang Mai" and "Chiang Mai, Thailand" go together;
+    /// otherwise the place as typed. Empty when it has none.
+    pub fn town(&self) -> String {
+        let to = self.travel.as_ref().map(|t| t.to.as_str()).unwrap_or("");
+        let text = [self.place.as_str(), self.address.as_str(), to]
+            .into_iter()
+            .map(str::trim)
+            .find(|t| !t.is_empty())
+            .unwrap_or("");
+        if text.is_empty() {
+            return String::new();
+        }
+        crate::places::town_in(text)
+            .map(str::to_string)
+            .unwrap_or_else(|| text.to_string())
+    }
+
     /// A title to show even when none was typed: "QF 25 Sydney to Tokyo".
     pub fn display_title(&self) -> String {
         if !self.title.trim().is_empty() {
@@ -494,9 +513,23 @@ impl Trip {
             .collect()
     }
 
-    /// Items with no date yet, most often ideas.
+    /// Items with no date yet, most often ideas, grouped by town (see
+    /// `Item::town`) and by title within it; those with no place come last.
     pub fn undated(&self) -> Vec<&Item> {
-        self.items.iter().filter(|i| i.start.is_none()).collect()
+        let mut v: Vec<(String, &Item)> = self
+            .items
+            .iter()
+            .filter(|i| i.start.is_none())
+            .map(|i| (i.town().to_lowercase(), i))
+            .collect();
+        v.sort_by(|(a, x), (b, y)| {
+            (a.is_empty(), a, x.title.to_lowercase()).cmp(&(
+                b.is_empty(),
+                b,
+                y.title.to_lowercase(),
+            ))
+        });
+        v.into_iter().map(|(_, i)| i).collect()
     }
 
     /// Every currency used by an item other than the home currency.
@@ -543,6 +576,40 @@ mod tests {
         );
         s.end = None;
         assert_eq!(s.nights(), vec![date(2027, 5, 14)]);
+    }
+
+    #[test]
+    fn undated_ideas_group_by_town() {
+        let mut t = Trip::new("T");
+        for (title, place) in [
+            ("Sunday market", "Ratchadamnoen Road, Chiang Mai"),
+            ("Pack", ""),
+            ("Cooking class", "Hoi An"),
+            ("Chatuchak", "Chatuchak, Bangkok"),
+            ("Doi Suthep", "Chiang Mai, Thailand"),
+            ("Boat", "Somewhere unknown"),
+        ] {
+            let mut i = Item::new(Kind::Activity);
+            i.title = title.into();
+            i.place = place.into();
+            t.items.push(i);
+        }
+        let order: Vec<(String, &str)> = t
+            .undated()
+            .iter()
+            .map(|i| (i.town(), i.title.as_str()))
+            .collect();
+        assert_eq!(
+            order,
+            vec![
+                ("Bangkok".into(), "Chatuchak"),
+                ("Chiang Mai".into(), "Doi Suthep"),
+                ("Chiang Mai".into(), "Sunday market"),
+                ("Hoi An".into(), "Cooking class"),
+                ("Somewhere unknown".into(), "Boat"),
+                (String::new(), "Pack"),
+            ]
+        );
     }
 
     #[test]

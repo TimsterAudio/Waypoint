@@ -11,6 +11,7 @@ pub mod money;
 pub mod pdf;
 pub mod places;
 pub mod rates;
+pub mod reshape;
 pub mod sample;
 pub mod zones;
 

@@ -255,6 +255,19 @@ pub fn zone_for(text: &str) -> Option<&'static str> {
         .map(|a| a.tz)
 }
 
+/// The known town a place names, from the first part of it that is one:
+/// "Wua Lai Road, Chiang Mai" and "Chiang Mai (CNX)" are both Chiang Mai.
+pub fn town_in(text: &str) -> Option<&'static str> {
+    let bare = text.split('(').next().unwrap_or(text).trim();
+    if bare.is_empty() {
+        return None;
+    }
+    std::iter::once(bare)
+        .chain(bare.split(','))
+        .find_map(|part| city(part.trim()))
+        .map(|c| c.name)
+}
+
 /// The town nearest a point on the map, for its time zone. Near a border
 /// it can be the town across it, so it's a good guess, not a certainty.
 pub fn nearest_city(lat: f64, lon: f64) -> Option<&'static City> {

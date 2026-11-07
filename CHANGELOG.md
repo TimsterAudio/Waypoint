@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- **Undo and Redo** (roadmap F10) for any change: an edit, a deleted item, a status change, moving or reshaping the trip. Ctrl+Z and Ctrl+Y (or Ctrl+Shift+Z), or Undo and Redo under Close trip, back through everything changed since the trip was opened. Typing in one box is one step; while a box is being typed in, Ctrl+Z undoes the typing there. An undo saves like any change. When changes saved elsewhere are taken in, the history starts again, so the other person's changes aren't undone from here.
+- **Reverse the trip** (F8), on Trip details while planning with nothing booked: the last place first, every journey the other way (From and To, and titles such as "Fly Melbourne to Da Nang"), each stay keeping its nights, the first and last days unchanged. Times are cleared.
+- **Swap two places** (F9), in the same place: two stays trade places in the route, each with its nights and what's planned during it; the stays between move along, and the journeys between are re-pointed and their times cleared. Journeys whose notes name a connection ("Connecting in Bangkok") are named in the message to check.
+- **Wrong day of the week:** something named for a day ("Saturday Walking Street", "Chatuchak Weekend Market") that's planned for another day is listed under To look at.
+- **No date yet** is grouped by town ("Wua Lai Road, Chiang Mai" and "Chiang Mai, Thailand" together), with a heading for each in the itinerary, and in that order on the phone itinerary and the PDF.
+
 - **Costs in another currency show the home amount too**, on the itinerary, the phone itinerary and the PDF: "¥92,000 (≈ $938.40)". "≈" means it uses the trip's current rate; a paid item shows the rate it was paid at, without "≈". Costs with no rate yet show only their own currency.
 - **Who's going** takes names separated by commas again: a comma typed after a name was removed at once, so a second name couldn't be added.
 

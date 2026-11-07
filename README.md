@@ -30,11 +30,15 @@ Waypoint doesn't sign in to Google itself; it saves to a folder that Google Driv
 ## Screens
 
 - **Overview**: how long until you go, what's booked, paid and still to pay against your budget, and what needs a look: nights with nowhere to stay, two places booked for one night, bookings that overlap, balances falling due in the next two weeks, free cancellation ending in the next week, booked travel and stays with no reference.
+- Something named for a day of the week ("Saturday Walking Street") that's planned for another day is listed too.
 - Anything under To look at that's fine as it is (a drive with no booking reference, say) can be marked **OK** so it stops showing; marked ones can be shown again and undone.
 - **Itinerary**: each day in time order, with "Tonight:" showing where you sleep. **+ Add** on a day adds a stay, travel, activity, meal or anything else on that day.
 - **Bookings**: every item in one table, filtered by kind and status, or searched by name, place or reference.
 - **Costs**: totals, the budget, cost by kind, what's still owing and when, and the exchange rates.
-- **Trip details**: the stage (Planning or Booking: while planning with nothing booked, moving the first day moves the whole trip), name, dates, home currency, budget, who's going, notes.
+- **Trip details**: the stage (Planning or Booking: while planning with nothing booked, moving the first day moves the whole trip), name, dates, home currency, budget, who's going, notes. While planning with nothing booked, **Try the route another way** reverses the whole trip or swaps two stays (each keeps its nights and what's planned there; the journeys between are re-pointed).
+- **No date yet**, at the end of the itinerary, holds ideas without a day, grouped by town.
+
+**Undo and Redo.** Ctrl+Z and Ctrl+Y (or Undo and Redo under Close trip) go back and forward through everything changed since the trip was opened. Typing in one box counts as one step.
 
 **Time zones.** Journeys take their time zones from where they leave and arrive ("Melbourne", "MEL", "Houston (IAH)", "Kyoto"), from lists of airports and towns built into Waypoint; set a zone yourself only for a place it doesn't know. Everything else takes its zone from the journeys: at home before the first, then wherever each one lands. Items are shown in the order they really happen, flight lengths allow for the time difference, flights over the date line that cover two nights count for both, and bookings in another zone show the time at home too. If a time without a zone could be in two places (flying east over the date line repeats part of a day), Waypoint asks you to set one.
 

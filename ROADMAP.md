@@ -8,16 +8,16 @@ Status: `[ ]` open, `[x]` done, `[-]` dropped, `[~]` later.
 
 ## Decisions so far (2026-10-24)
 
-- **Yes:** A1, A2, A3, B1, B2, B3, B4, E3, F7
-- **Undecided:** C1, C2, C3, D1, D2, D3, D4, D5, E1, E2, E4, F1, F2, F3, F4, F5, F6, F8, F9, F10, G1, G2
+- **Yes:** A1, A2, A3, B1, B2, B3, B4, E3, F7, F8, F9, F10
+- **Undecided:** C1, C2, C3, D1, D2, D3, D4, D5, E1, E2, E4, F1, F2, F3, F4, F5, F6, G1, G2
 
 ## Suggested order (2026-10-31)
 
 A path through everything listed, earliest first. It's a suggestion: only items marked Yes get built, so the undecided ones in it still need a mark.
 
 1. **Try it for real.** The Dallas trip: Google Drive on Windows and Linux, the phone page on the iPhone. Gaps go in GitHub issues and are fixed first.
-2. **Undo first: F10.** Every change after it is safe to try, and F8 and F9 use it.
-3. **Planning tools: F8, F9, then F6.** While SE Asia 2027 is still ideas, so the route can be tried both ways before anything is booked. All three reshape a whole trip, like moving the first day.
+2. **Undo first: F10.** Done.
+3. **Planning tools: F8, F9 (done), then F6.** While SE Asia 2027 is still ideas, so the route can be tried both ways before anything is booked. All three reshape a whole trip, like moving the first day.
 4. **Before you go: A3, A2, A1, then D5, D1, D2.** A3 makes each traveller a person with details rather than a name; insurance (A2) and loyalty numbers (D5) hang off the same people. Vietnam and Cambodia need visas for October 2027, so A3 has a real deadline. The to-do list (D1) can then take "visa to apply for" from A3, and packing (D2) follows it.
 5. **Small sharing wins: E1, E4, C3.** Calendar file, notes on the itinerary to share, baggage and seats on flights. Each is small and stands alone.
 6. **On the trip: D3, D4, E2.** Spending each day, emergency and local information, tickets attached to bookings.
@@ -61,9 +61,9 @@ A path through everything listed, earliest first. It's a suggestion: only items 
 - [ ] **F5** Merge two people's changes item by item instead of choosing one version. *Offline*
 - [ ] **F6** Copy a past trip as the start of a new one. *Offline*
 - [x] **F7** A planning stage: a trip is Planning or Booking, and while it's planning with nothing booked, changing the first day moves the whole trip and its ideas with it. *Offline, Asked* — **Yes**, done 2026-10-26
-- [ ] **F8** Reverse a trip while planning: the whole trip mirrored end to end, so the last place comes first. Each journey's From and To swap, a stay of four nights stays four nights, and an overnight flight home becomes an overnight flight out. Times are cleared, since a 06:00 departure doesn't mean anything flown the other way. An Undo puts the trip back exactly as it was, times and notes included. *Offline, Asked*
-- [ ] **F9** Swap two places while planning: pick two stays (Siem Reap and Chiang Mai, say) and they trade places in the route, each taking its own nights and the ideas planned there with it; the journeys either side are re-pointed, and their connection notes flagged to check. Ideas tied to a day of the week (a Saturday market) are flagged when they land on another day. An Undo puts the trip back exactly as it was. *Offline, Asked*
-- [ ] **F10** Undo and Redo for any change: an edit, a deleted item, a status change, a move of the whole trip. Ctrl+Z and Ctrl+Y (and Undo and Redo buttons), back through everything changed since the trip was opened. An undo is saved like any other change, so it reaches the other computer too. Changes taken in from the other person aren't undone from here. *Offline, Asked*
+- [x] **F8** Reverse a trip while planning: the whole trip mirrored end to end, so the last place comes first. Each journey's From and To swap, a stay of four nights stays four nights, and an overnight flight home becomes an overnight flight out. Times are cleared, since a 06:00 departure doesn't mean anything flown the other way. An Undo puts the trip back exactly as it was, times and notes included. *Offline, Asked* — **Yes**, done 2026-11-07
+- [x] **F9** Swap two places while planning: pick two stays (Siem Reap and Chiang Mai, say) and they trade places in the route, each taking its own nights and the ideas planned there with it; the journeys either side are re-pointed, and their connection notes flagged to check. Ideas tied to a day of the week (a Saturday market) are flagged when they land on another day. An Undo puts the trip back exactly as it was. *Offline, Asked* — **Yes**, done 2026-11-07
+- [x] **F10** Undo and Redo for any change: an edit, a deleted item, a status change, a move of the whole trip. Ctrl+Z and Ctrl+Y (and Undo and Redo buttons), back through everything changed since the trip was opened. An undo is saved like any other change, so it reaches the other computer too. Changes taken in from the other person aren't undone from here. *Offline, Asked* — **Yes**, done 2026-11-07
 
 ## G. Parked
 - [ ] **G1** Maps (needs map tiles from the internet). *Online*
@@ -71,9 +71,11 @@ A path through everything listed, earliest first. It's a suggestion: only items 
 
 ## Done
 
-Built from the owner's notes while planning the first trip (GitHub issues 2, 4, 6 and 7).
+Built from the owner's notes while planning (GitHub issues 2, 4, 6 and 7, and later asks).
 
 - [x] **Z1** Home time on bookings in other time zones, with start and end, on its own line in the itinerary and on the phone page. *Asked* — done 2026-10-23
 - [x] **Z2** A home time zone for the trip (Trip details), taken from the computer for new trips. — done 2026-10-23
 - [x] **Z3** Address and phone for stays on the itinerary. *Asked* — done 2026-10-23
 - [x] **Z4** Itinerary to share: booked items without costs, references or notes, printable to PDF from the browser. *Asked* — done 2026-10-23
+- [x] **Z5** No date yet grouped by town, so ideas for one place sit together. *Asked* — done 2026-11-07
+- [x] **Z6** Things named for a day of the week ("Saturday Walking Street") flagged when planned for another day. — done 2026-11-07
