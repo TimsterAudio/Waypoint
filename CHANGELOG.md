@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-## 0.2.0 – 2026-11-07
+## 0.2.0 – 2026-11-07 (commit ef9bb76, release v0.2.0)
 
 Everything since the first version, from planning real trips: time zones that work across the date line and come from the places themselves, the planning stage with reverse and swap, Undo and Redo, PDFs and an itinerary to share.
 
